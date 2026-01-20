@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integration Test Suite - Drum Machine</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #00d4ff;
+        }
+
+        .test-section {
+            background: rgba(30, 30, 46, 0.9);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .test-section h2 {
+            color: #ffe66d;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .test-case {
+            background: rgba(20, 20, 30, 0.8);
+            border-left: 4px solid #555;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        .test-case.pass {
+            border-left-color: #00ff88;
+        }
+
+        .test-case.fail {
+            border-left-color: #ff6b6b;
+        }
+
+        .test-case.running {
+            border-left-color: #00d4ff;
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .test-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .test-result {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        .test-result.pass {
+            color: #00ff88;
+        }
+
+        .test-result.fail {
+            color: #ff6b6b;
+        }
+
+        .test-error {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid #ff6b6b;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1em;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #00bbee, #0088bb);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .summary {
+            background: rgba(30, 30, 46, 0.9);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .summary-stat {
+            display: inline-block;
+            margin: 0 20px;
+            font-size: 1.2em;
+        }
+
+        .summary-stat .label {
+            color: #aaa;
+            font-size: 0.8em;
+        }
+
+        .summary-stat .value {
+            font-weight: bold;
+            font-size: 1.5em;
+        }
+
+        .summary-stat.pass .value {
+            color: #00ff88;
+        }
+
+        .summary-stat.fail .value {
+            color: #ff6b6b;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Pattern State Integration Test Suite</h1>
+
+        <div class="summary">
+            <div class="summary-stat">
+                <div class="label">Total Tests</div>
+                <div class="value" id="totalTests">0</div>
+            </div>
+            <div class="summary-stat pass">
+                <div class="label">Passed</div>
+                <div class="value" id="passedTests">0</div>
+            </div>
+            <div class="summary-stat fail">
+                <div class="label">Failed</div>
+                <div class="value" id="failedTests">0</div>
+            </div>
+            <div class="summary-stat">
+                <div class="label">Duration</div>
+                <div class="value" id="duration">0ms</div>
+            </div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" id="runTestsBtn">▶ Run All Tests</button>
+            <button class="btn" id="clearBtn">🗑 Clear Results</button>
+        </div>
+
+        <div id="testResults"></div>
+    </div>
+
+    <script type="module">
+        import DrumMachineEngine from './drumMachineEngine.js';
+
+        // Test framework
+        class TestRunner {
+            constructor() {
+                this.tests = [];
+                this.results = [];
+                this.drumMachine = null;
+            }
+
+            addTest(name, fn, section = 'General') {
+                this.tests.push({ name, fn, section });
+            }
+
+            async runAll() {
+                const startTime = performance.now();
+                this.results = [];
+
+                // Initialize drum machine once
+                console.log('Initializing drum machine...');
+                this.drumMachine = new DrumMachineEngine(120);
+                await this.drumMachine.initialize();
+
+                let passed = 0;
+                let failed = 0;
+
+                // Group tests by section
+                const sections = {};
+                this.tests.forEach(test => {
+                    if (!sections[test.section]) {
+                        sections[test.section] = [];
+                    }
+                    sections[test.section].push(test);
+                });
+
+                // Run tests by section
+                for (const [sectionName, tests] of Object.entries(sections)) {
+                    const sectionEl = this.createSection(sectionName);
+                    
+                    for (let i = 0; i < tests.length; i++) {
+                        const test = tests[i];
+                        const testEl = this.createTestCase(test.name);
+                        sectionEl.appendChild(testEl);
+
+                        try {
+                            testEl.classList.add('running');
+                            await test.fn(this.drumMachine, this);
+                            
+                            testEl.classList.remove('running');
+                            testEl.classList.add('pass');
+                            testEl.querySelector('.test-result').textContent = '✓ PASS';
+                            testEl.querySelector('.test-result').classList.add('pass');
+                            
+                            passed++;
+                            this.results.push({ name: test.name, pass: true });
+                        } catch (error) {
+                            testEl.classList.remove('running');
+                            testEl.classList.add('fail');
+                            testEl.querySelector('.test-result').textContent = '✗ FAIL';
+                            testEl.querySelector('.test-result').classList.add('fail');
+                            
+                            const errorEl = document.createElement('div');
+                            errorEl.className = 'test-error';
+                            errorEl.textContent = error.message;
+                            testEl.appendChild(errorEl);
+                            
+                            failed++;
+                            this.results.push({ name: test.name, pass: false, error: error.message });
+                        }
+
+                        // Update progress
+                        const progress = ((i + 1) / tests.length) * 100;
+                        document.getElementById('progressFill').style.width = progress + '%';
+                    }
+                }
+
+                const duration = Math.round(performance.now() - startTime);
+
+                // Update summary
+                document.getElementById('totalTests').textContent = this.tests.length;
+                document.getElementById('passedTests').textContent = passed;
+                document.getElementById('failedTests').textContent = failed;
+                document.getElementById('duration').textContent = duration + 'ms';
+
+                // Cleanup
+                this.drumMachine.destroy();
+
+                return { passed, failed, duration };
+            }
+
+            createSection(name) {
+                let section = document.getElementById('section-' + name);
+                if (!section) {
+                    section = document.createElement('div');
+                    section.id = 'section-' + name;
+                    section.className = 'test-section';
+                    section.innerHTML = `<h2>${name}</h2>`;
+                    document.getElementById('testResults').appendChild(section);
+                }
+                return section;
+            }
+
+            createTestCase(name) {
+                const testCase = document.createElement('div');
+                testCase.className = 'test-case';
+                testCase.innerHTML = `
+                    <div class="test-name">${name}</div>
+                    <div class="test-result">⏳ Running...</div>
+                `;
+                return testCase;
+            }
+
+            // Assertion helpers
+            assert(condition, message) {
+                if (!condition) {
+                    throw new Error(message || 'Assertion failed');
+                }
+            }
+
+            assertEqual(actual, expected, message) {
+                if (actual !== expected) {
+                    throw new Error(message || `Expected ${expected}, got ${actual}`);
+                }
+            }
+
+            assertDeepEqual(actual, expected, message) {
+                if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+                    throw new Error(message || `Objects not equal: ${JSON.stringify(actual)} !== ${JSON.stringify(expected)}`);
+                }
+            }
+
+            async wait(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+        }
+
+        // Create test runner
+        const runner = new TestRunner();
+
+        // ==================== PATTERN STATE TESTS ====================
+
+        runner.addTest('Engine initializes with empty pattern', async (engine, test) => {
+            const pattern = engine.getPattern();
+            test.assertEqual(pattern.kick.length, 16, 'Kick has 16 steps');
+            test.assertEqual(pattern.snare.length, 16, 'Snare has 16 steps');
+            test.assertEqual(pattern.hihat.length, 16, 'HiHat has 16 steps');
+            test.assertEqual(pattern.bass.length, 16, 'Bass has 16 steps');
+            
+            test.assert(pattern.kick.every(s => s === false), 'All kick steps are false');
+            test.assert(pattern.snare.every(s => s === false), 'All snare steps are false');
+        }, 'Pattern State');
+
+        runner.addTest('setStep updates pattern correctly', async (engine, test) => {
+            engine.setStep('kick', 0, true);
+            const pattern = engine.getPattern();
+            test.assertEqual(pattern.kick[0], true, 'Kick step 0 is true');
+            test.assertEqual(pattern.kick[1], false, 'Kick step 1 is false');
+            
+            // Cleanup
+            engine.clearPattern();
+        }, 'Pattern State');
+
+        runner.addTest('toggleStep toggles state correctly', async (engine, test) => {
+            const state1 = engine.toggleStep('snare', 5);
+            test.assertEqual(state1, true, 'First toggle returns true');
+            
+            const state2 = engine.toggleStep('snare', 5);
+            test.assertEqual(state2, false, 'Second toggle returns false');
+            
+            const pattern = engine.getPattern();
+            test.assertEqual(pattern.snare[5], false, 'Pattern reflects toggle');
+            
+            // Cleanup
+            engine.clearPattern();
+        }, 'Pattern State');
+
+        runner.addTest('loadPattern loads correctly', async (engine, test) => {
+            const testPattern = {
+                kick: new Array(16).fill(false),
+                snare: new Array(16).fill(false),
+                hihat: new Array(16).fill(false),
+                bass: new Array(16).fill(false)
+            };
+            testPattern.kick[0] = true;
+            testPattern.snare[4] = true;
+            
+            engine.loadPattern(testPattern);
+            const loaded = engine.getPattern();
+            
+            test.assertDeepEqual(loaded, testPattern, 'Pattern loaded correctly');
+            
+            // Cleanup
+            engine.clearPattern();
+        }, 'Pattern State');
+
+        runner.addTest('clearPattern clears all tracks', async (engine, test) => {
+            engine.setStep('kick', 0, true);
+            engine.setStep('snare', 5, true);
+            engine.setStep('hihat', 10, true);
+            
+            engine.clearPattern();
+            const pattern = engine.getPattern();
+            
+            test.assert(pattern.kick.every(s => s === false), 'Kick cleared');
+            test.assert(pattern.snare.every(s => s === false), 'Snare cleared');
+            test.assert(pattern.hihat.every(s => s === false), 'HiHat cleared');
+        }, 'Pattern State');
+
+        runner.addTest('clearTrack clears single track', async (engine, test) => {
+            engine.setStep('kick', 0, true);
+            engine.setStep('snare', 5, true);
+            
+            engine.clearTrack('kick');
+            const pattern = engine.getPattern();
+            
+            test.assert(pattern.kick.every(s => s === false), 'Kick cleared');
+            test.assertEqual(pattern.snare[5], true, 'Snare unchanged');
+            
+            // Cleanup
+            engine.clearPattern();
+        }, 'Pattern State');
+
+        // ==================== PRESET TESTS ====================
+
+        runner.addTest('loadPreset loads basic preset', async (engine, test) => {
+            const success = engine.loadPreset('basic');
+            test.assertEqual(success, true, 'Preset loaded successfully');
+            
+            const pattern = engine.getPattern();
+            test.assertEqual(pattern.kick[0], true, 'Basic pattern has kick on step 0');
+            
+            // Cleanup
+            engine.clearPattern();
+        }, 'Presets');
+
+        runner.addTest('loadPreset loads all presets', async (engine, test) => {
+            const presets = engine.getPresets();
+            
+            for (const preset of presets) {
+                const success = engine.loadPreset(preset);
+                test.assertEqual(success, true, `Preset ${preset} loaded`);
+            }
+            
+            // Cleanup
+            engine.clearPattern();
+        }, 'Presets');
+
+        runner.addTest('getPresets returns correct list', async (engine, test) => {
+            const presets = engine.getPresets();
+            test.assert(Array.isArray(presets), 'Presets is an array');
+            test.assert(presets.length > 0, 'Presets list not empty');
+            test.assert(presets.includes('basic'), 'Includes basic preset');
+            test.assert(presets.includes('funk'), 'Includes funk preset');
+        }, 'Presets');
+
+        // ==================== PLAYBACK TESTS ====================
+
+        runner.addTest('start/stop playback works', async (engine, test) => {
+            test.assertEqual(engine.isPlaying(), false, 'Initially not playing');
+            
+            await engine.start();
+            test.assertEqual(engine.isPlaying(), true, 'Playing after start');
+            
+            engine.stop();
+            test.assertEqual(engine.isPlaying(), false, 'Stopped after stop');
+        }, 'Playback');
+
+        runner.addTest('toggle playback works', async (engine, test) => {
+            test.assertEqual(engine.isPlaying(), false, 'Initially not playing');
+            
+            await engine.toggle();
+            test.assertEqual(engine.isPlaying(), true, 'Playing after first toggle');
+            
+            await engine.toggle();
+            test.assertEqual(engine.isPlaying(), false, 'Stopped after second toggle');
+        }, 'Playback');
+
+        runner.addTest('onStepPlay callback fires', async (engine, test) => {
+            let callbackFired = false;
+            let receivedStep = -1;
+            
+            engine.onStepPlay((step, time) => {
+                callbackFired = true;
+                receivedStep = step;
+            });
+            
+            await engine.start();
+            await test.wait(150); // Wait for first step
+            engine.stop();
+            
+            test.assertEqual(callbackFired, true, 'Callback fired');
+            test.assert(receivedStep >= 0 && receivedStep < 16, 'Valid step number');
+        }, 'Playback');
+
+        // ==================== SETTINGS TESTS ====================
+
+        runner.addTest('setBPM changes tempo', async (engine, test) => {
+            engine.setBPM(140);
+            test.assertEqual(engine.getBPM(), 140, 'BPM set to 140');
+            
+            engine.setBPM(100);
+            test.assertEqual(engine.getBPM(), 100, 'BPM set to 100');
+            
+            // Reset
+            engine.setBPM(120);
+        }, 'Settings');
+
+        runner.addTest('setTrackVelocity updates velocity', async (engine, test) => {
+            engine.setTrackVelocity('kick', 0.5);
+            test.assertEqual(engine.trackSettings.kick.velocity, 0.5, 'Kick velocity set');
+            
+            // Reset
+            engine.setTrackVelocity('kick', 1.0);
+        }, 'Settings');
+
+        runner.addTest('setTrackEnabled mutes track', async (engine, test) => {
+            engine.setTrackEnabled('snare', false);
+            test.assertEqual(engine.trackSettings.snare.enabled, false, 'Snare disabled');
+            
+            engine.setTrackEnabled('snare', true);
+            test.assertEqual(engine.trackSettings.snare.enabled, true, 'Snare enabled');
+        }, 'Settings');
+
+        runner.addTest('setHiHatOpen changes hi-hat type', async (engine, test) => {
+            engine.setHiHatOpen(true);
+            test.assertEqual(engine.trackSettings.hihat.open, true, 'Hi-hat open');
+            
+            engine.setHiHatOpen(false);
+            test.assertEqual(engine.trackSettings.hihat.open, false, 'Hi-hat closed');
+        }, 'Settings');
+
+        runner.addTest('setBassPitch changes pitch', async (engine, test) => {
+            engine.setBassPitch(100);
+            test.assertEqual(engine.trackSettings.bass.pitch, 100, 'Bass pitch set');
+            
+            // Reset
+            engine.setBassPitch(80);
+        }, 'Settings');
+
+        // ==================== METRICS TESTS ====================
+
+        runner.addTest('getMetrics returns valid data', async (engine, test) => {
+            const metrics = engine.getMetrics();
+            
+            test.assert(typeof metrics.stepsPlayed === 'number', 'stepsPlayed is number');
+            test.assert(typeof metrics.currentTime === 'number', 'currentTime is number');
+            test.assert(typeof metrics.isPlaying === 'boolean', 'isPlaying is boolean');
+        }, 'Metrics');
+
+        runner.addTest('stepsPlayed increments during playback', async (engine, test) => {
+            const beforeMetrics = engine.getMetrics();
+            const beforeSteps = beforeMetrics.stepsPlayed;
+            
+            await engine.start();
+            await test.wait(300); // Wait for a few steps
+            engine.stop();
+            
+            const afterMetrics = engine.getMetrics();
+            const afterSteps = afterMetrics.stepsPlayed;
+            
+            test.assert(afterSteps > beforeSteps, 'Steps incremented during playback');
+        }, 'Metrics');
+
+        // ==================== EDGE CASES ====================
+
+        runner.addTest('Invalid track name handled', async (engine, test) => {
+            // Should not throw
+            engine.setStep('invalid', 0, true);
+            const pattern = engine.getPattern();
+            test.assert(!pattern.invalid, 'Invalid track not created');
+        }, 'Edge Cases');
+
+        runner.addTest('Invalid step index handled', async (engine, test) => {
+            // Should not throw
+            engine.setStep('kick', -1, true);
+            engine.setStep('kick', 999, true);
+            
+            const pattern = engine.getPattern();
+            test.assertEqual(pattern.kick.length, 16, 'Pattern unchanged');
+        }, 'Edge Cases');
+
+        runner.addTest('BPM bounds enforced', async (engine, test) => {
+            engine.setBPM(10); // Too low
+            test.assert(engine.getBPM() >= 20, 'BPM clamped to minimum');
+            
+            engine.setBPM(500); // Too high
+            test.assert(engine.getBPM() <= 300, 'BPM clamped to maximum');
+            
+            // Reset
+            engine.setBPM(120);
+        }, 'Edge Cases');
+
+        // ==================== UI CONTROLS ====================
+
+        document.getElementById('runTestsBtn').addEventListener('click', async () => {
+            document.getElementById('runTestsBtn').disabled = true;
+            document.getElementById('testResults').innerHTML = '';
+            document.getElementById('progressFill').style.width = '0%';
+            
+            const results = await runner.runAll();
+            
+            document.getElementById('runTestsBtn').disabled = false;
+            document.getElementById('progressFill').style.width = '100%';
+            
+            console.log('Test Results:', results);
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            document.getElementById('testResults').innerHTML = '';
+            document.getElementById('totalTests').textContent = '0';
+            document.getElementById('passedTests').textContent = '0';
+            document.getElementById('failedTests').textContent = '0';
+            document.getElementById('duration').textContent = '0ms';
+            document.getElementById('progressFill').style.width = '0%';
+        });
+
+        console.log('Test suite loaded. Click "Run All Tests" to start.');
+    </script>
+</body>
+</html>

@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drum Machine with Debug Instrumentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            text-align: center;
+            margin-bottom: 30px;
+            opacity: 0.8;
+            font-size: 1.1em;
+        }
+
+        .debug-badge {
+            background: #f00;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            margin-left: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-section {
+            margin-bottom: 15px;
+        }
+
+        .control-section h3 {
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .debug-controls {
+            background: rgba(255, 0, 0, 0.1);
+            border: 2px solid #f00;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .debug-controls h3 {
+            color: #f00;
+            margin-bottom: 10px;
+        }
+
+        .debug-controls button {
+            background: linear-gradient(135deg, #f00 0%, #c00 100%);
+        }
+
+        .sequencer-grid {
+            display: grid;
+            grid-template-columns: 100px repeat(16, 1fr);
+            gap: 4px;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .track-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            text-transform: uppercase;
+        }
+
+        .step {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .step:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .step.active {
+            background: linear-gradient(135deg, #00ff88 0%, #00cc66 100%);
+            border-color: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .step.current-step {
+            border-color: #ff0;
+            border-width: 3px;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.7);
+        }
+
+        .step.playing {
+            animation: playPulse 0.1s ease;
+        }
+
+        @keyframes playPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .step.measure-start {
+            border-left-width: 3px;
+            border-left-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            cursor: pointer;
+        }
+
+        .loading-overlay.hidden {
+            display: none;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-content h2 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+
+        .loading-content p {
+            font-size: 1.2em;
+            opacity: 0.8;
+        }
+
+        #debugStats {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 2px solid #0f0;
+        }
+
+        #debugStats h3 {
+            color: #0f0;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        #debugStats pre {
+            background: rgba(0, 255, 0, 0.05);
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <h2>🎵 Drum Machine with Debug Instrumentation</h2>
+            <p>Click anywhere to initialize audio system</p>
+            <p style="margin-top: 20px; font-size: 0.9em; color: #f00;">⚠️ Debug logging enabled - check console for details</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>🥁 Drum Machine <span class="debug-badge">DEBUG MODE</span></h1>
+        <p class="subtitle">Professional Web Audio API Sequencer with Comprehensive Debugging</p>
+
+        <div class="controls">
+            <div class="control-section">
+                <h3>Transport Controls</h3>
+                <button id="playBtn">▶️ Play</button>
+                <button id="stopBtn" disabled>⏹️ Stop</button>
+                <button id="clearBtn">🗑️ Clear Pattern</button>
+            </div>
+
+            <div class="control-section">
+                <h3>Preset Patterns</h3>
+                <button data-preset="basic">Basic Beat</button>
+                <button data-preset="rock">Rock</button>
+                <button data-preset="funk">Funk</button>
+                <button data-preset="techno">Techno</button>
+                <button data-preset="hiphop">Hip-Hop</button>
+            </div>
+
+            <div class="debug-controls">
+                <h3>🔍 Debug Controls</h3>
+                <button id="printReportBtn">📊 Print Debug Report</button>
+                <button id="exportReportBtn">💾 Export Report (JSON)</button>
+                <button id="clearLogsBtn">🗑️ Clear Logs</button>
+                <button id="toggleVerboseBtn">🔊 Toggle Verbose</button>
+                <button id="toggleDomLogBtn">📺 Toggle DOM Log</button>
+                <button id="refreshStatsBtn">🔄 Refresh Stats</button>
+            </div>
+        </div>
+
+        <div id="sequencerGrid" class="sequencer-grid"></div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-label">Current Step</div>
+                <div class="stat-value" id="currentStepDisplay">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Active Notes</div>
+                <div class="stat-value" id="activeNotesDisplay">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Notes Scheduled</div>
+                <div class="stat-value" id="notesScheduledDisplay">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Audio Errors</div>
+                <div class="stat-value" id="audioErrorsDisplay">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Context State</div>
+                <div class="stat-value" id="contextStateDisplay">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Nodes Created</div>
+                <div class="stat-value" id="nodesCreatedDisplay">0</div>
+            </div>
+        </div>
+
+        <div id="debugStats">
+            <h3>🔊 Real-time Debug Statistics</h3>
+            <p>Click "Refresh Stats" to update</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import AudioDebugLogger from './audio-debug-logger.js';
+
+        /**
+         * Drum Machine with Debug Instrumentation
+         */
+        class DrumMachineDebug {
+            constructor() {
+                // Initialize debug logger FIRST
+                this.debugLogger = new AudioDebugLogger({
+                    enabled: true,
+                    verbose: false,
+                    logToConsole: true,
+                    logToDOM: false
+                });
+
+                this.debugLogger.logEvent('🎵 Drum Machine initializing...', null, 'info');
+
+                // Audio context and timing
+                this.audioContext = null;
+                this.isPlaying = false;
+                this.currentStep = 0;
+                this.tempo = 120;
+                this.lookahead = 25.0;
+                this.scheduleAheadTime = 0.1;
+                this.nextNoteTime = 0.0;
+                this.timerID = null;
+                this.isInitialized = false;
+
+                // Pattern data
+                this.tracks = ['kick', 'snare', 'hihat', 'bass'];
+                this.pattern = {
+                    kick: new Array(16).fill(false),
+                    snare: new Array(16).fill(false),
+                    hihat: new Array(16).fill(false),
+                    bass: new Array(16).fill(false)
+                };
+
+                this.volumes = {
+                    kick: 0.8,
+                    snare: 0.7,
+                    hihat: 0.6,
+                    bass: 0.75
+                };
+
+                // Stats
+                this.stats = {
+                    notesScheduled: 0,
+                    timingErrors: [],
+                    audioErrors: 0
+                };
+
+                // Presets
+                this.presets = {
+                    basic: {
+                        kick: [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+                        snare: [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
+                        hihat: [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+                        bass: [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]
+                    },
+                    rock: {
+                        kick: [1,0,0,0,1,0,1,0,1,0,0,0,1,0,0,0],
+                        snare: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+                        hihat: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                        bass: [1,0,0,0,1,0,1,0,0,0,0,0,1,0,0,0]
+                    },
+                    funk: {
+                        kick: [1,0,0,0,0,0,1,0,0,1,0,0,0,0,1,0],
+                        snare: [0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0],
+                        hihat: [1,0,1,1,0,1,1,0,1,0,1,1,0,1,1,0],
+                        bass: [1,0,0,1,0,0,1,0,0,0,1,0,0,0,1,0]
+                    },
+                    techno: {
+                        kick: [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+                        snare: [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
+                        hihat: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                        bass: [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0]
+                    },
+                    hiphop: {
+                        kick: [1,0,0,0,0,0,1,0,1,0,0,0,0,0,1,0],
+                        snare: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+                        hihat: [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+                        bass: [1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0]
+                    }
+                };
+
+                this.init();
+            }
+
+            async init() {
+                this.buildUI();
+                this.attachEventListeners();
+                this.updateActiveNotesDisplay();
+                
+                const overlay = document.getElementById('loadingOverlay');
+                overlay.addEventListener('click', async () => {
+                    try {
+                        await this.initAudio();
+                        overlay.classList.add('hidden');
+                        this.updateDebugStats();
+                    } catch (error) {
+                        this.debugLogger.logError(error, 'initialization');
+                        alert('Failed to initialize audio: ' + error.message);
+                    }
+                });
+            }
+
+            async initAudio() {
+                if (this.isInitialized) {
+                    this.debugLogger.logWarning('Already initialized');
+                    return;
+                }
+
+                try {
+                    this.debugLogger.logEvent('🎵 Initializing AudioContext...', null, 'audio');
+                    
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // ✅ WRAP AUDIOCONTEXT WITH DEBUG LOGGER
+                    this.debugLogger.wrapAudioContext(this.audioContext);
+                    
+                    if (this.audioContext.state !== 'running') {
+                        this.debugLogger.logEvent(`AudioContext state: ${this.audioContext.state}, resuming...`, null, 'warning');
+                        await this.audioContext.resume();
+                        
+                        let attempts = 0;
+                        while (this.audioContext.state !== 'running' && attempts < 20) {
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                            attempts++;
+                        }
+                        
+                        if (this.audioContext.state !== 'running') {
+                            throw new Error(`Failed to start AudioContext. State: ${this.audioContext.state}`);
+                        }
+                    }
+                    
+                    this.isInitialized = true;
+                    this.debugLogger.logEvent('✅ AudioContext initialized successfully', {
+                        state: this.audioContext.state,
+                        sampleRate: this.audioContext.sampleRate,
+                        baseLatency: this.audioContext.baseLatency
+                    }, 'success');
+                    
+                    this.updateDebugStats();
+                    
+                } catch (error) {
+                    this.debugLogger.logError(error, 'initAudio');
+                    throw error;
+                }
+            }
+
+            buildUI() {
+                const grid = document.getElementById('sequencerGrid');
+                grid.innerHTML = '';
+
+                this.tracks.forEach(track => {
+                    const label = document.createElement('div');
+                    label.className = `track-label ${track}`;
+                    label.textContent = track.toUpperCase();
+                    grid.appendChild(label);
+
+                    for (let step = 0; step < 16; step++) {
+                        const button = document.createElement('div');
+                        button.className = 'step';
+                        if (step % 4 === 0) button.classList.add('measure-start');
+                        button.dataset.track = track;
+                        button.dataset.step = step;
+                        button.addEventListener('click', () => this.toggleStep(track, step));
+                        grid.appendChild(button);
+                    }
+                });
+            }
+
+            attachEventListeners() {
+                document.getElementById('playBtn').addEventListener('click', () => this.play());
+                document.getElementById('stopBtn').addEventListener('click', () => this.stop());
+                document.getElementById('clearBtn').addEventListener('click', () => this.clearPattern());
+
+                document.querySelectorAll('[data-preset]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const preset = e.target.dataset.preset;
+                        this.loadPreset(preset);
+                        this.debugLogger.logEvent(`Loaded preset: ${preset}`, null, 'info');
+                    });
+                });
+
+                // Debug controls
+                document.getElementById('printReportBtn').addEventListener('click', () => {
+                    this.debugLogger.printReport();
+                });
+
+                document.getElementById('exportReportBtn').addEventListener('click', () => {
+                    this.debugLogger.exportReport();
+                    this.debugLogger.logEvent('Report exported', null, 'success');
+                });
+
+                document.getElementById('clearLogsBtn').addEventListener('click', () => {
+                    this.debugLogger.clear();
+                    this.updateDebugStats();
+                });
+
+                document.getElementById('toggleVerboseBtn').addEventListener('click', () => {
+                    this.debugLogger.setVerbose(!this.debugLogger.verbose);
+                });
+
+                document.getElementById('toggleDomLogBtn').addEventListener('click', () => {
+                    this.debugLogger.logToDOM = !this.debugLogger.logToDOM;
+                    if (this.debugLogger.logToDOM && !this.debugLogger.logElement) {
+                        this.debugLogger._createLogElement();
+                    } else if (!this.debugLogger.logToDOM && this.debugLogger.logElement) {
+                        this.debugLogger.logElement.remove();
+                        this.debugLogger.logElement = null;
+                    }
+                });
+
+                document.getElementById('refreshStatsBtn').addEventListener('click', () => {
+                    this.updateDebugStats();
+                });
+            }
+
+            toggleStep(track, step) {
+                this.pattern[track][step] = !this.pattern[track][step];
+                this.updateUI();
+                this.updateActiveNotesDisplay();
+            }
+
+            updateUI() {
+                this.tracks.forEach(track => {
+                    for (let step = 0; step < 16; step++) {
+                        const button = document.querySelector(`[data-track="${track}"][data-step="${step}"]`);
+                        if (button) {
+                            button.classList.toggle('active', this.pattern[track][step]);
+                        }
+                    }
+                });
+            }
+
+            updateCurrentStepUI(step) {
+                document.querySelectorAll('.current-step').forEach(el => el.classList.remove('current-step'));
+                document.querySelectorAll(`[data-step="${step}"]`).forEach(el => el.classList.add('current-step'));
+                document.getElementById('currentStepDisplay').textContent = step + 1;
+            }
+
+            updateActiveNotesDisplay() {
+                let count = 0;
+                this.tracks.forEach(track => {
+                    count += this.pattern[track].filter(v => v).length;
+                });
+                document.getElementById('activeNotesDisplay').textContent = count;
+            }
+
+            clearPattern() {
+                if (confirm('Clear all patterns?')) {
+                    this.tracks.forEach(track => this.pattern[track].fill(false));
+                    this.updateUI();
+                    this.updateActiveNotesDisplay();
+                    this.debugLogger.logEvent('Pattern cleared', null, 'info');
+                }
+            }
+
+            loadPreset(presetName) {
+                const preset = this.presets[presetName];
+                if (!preset) return;
+                this.tracks.forEach(track => {
+                    this.pattern[track] = preset[track].map(v => !!v);
+                });
+                this.updateUI();
+                this.updateActiveNotesDisplay();
+            }
+
+            get secondsPerBeat() {
+                return 60.0 / this.tempo;
+            }
+
+            get secondsPer16thNote() {
+                return this.secondsPerBeat / 4;
+            }
+
+            scheduleNote(track, time) {
+                try {
+                    const currentTime = this.audioContext.currentTime;
+                    const minScheduleTime = currentTime + 0.001;
+                    
+                    if (time < minScheduleTime) {
+                        this.debugLogger.logWarning(
+                            `Adjusting ${track} time: ${time.toFixed(3)} → ${minScheduleTime.toFixed(3)}`
+                        );
+                        time = minScheduleTime;
+                        this.stats.timingErrors.push({ track, time });
+                    }
+
+                    // ✅ LOG SCHEDULED NOTE
+                    this.debugLogger.logScheduledNote(track, time, this.volumes[track], {
+                        step: this.currentStep
+                    });
+
+                    const volume = this.volumes[track];
+                    
+                    switch(track) {
+                        case 'kick': this.playKick(time, volume); break;
+                        case 'snare': this.playSnare(time, volume); break;
+                        case 'hihat': this.playHiHat(time, volume); break;
+                        case 'bass': this.playBass(time, volume); break;
+                    }
+
+                    this.stats.notesScheduled++;
+                    document.getElementById('notesScheduledDisplay').textContent = this.stats.notesScheduled;
+                    
+                } catch (error) {
+                    this.debugLogger.logError(error, `scheduleNote(${track})`);
+                    this.stats.audioErrors++;
+                    document.getElementById('audioErrorsDisplay').textContent = this.stats.audioErrors;
+                }
+            }
+
+            playKick(time, volume = 0.8) {
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+
+                osc.frequency.setValueAtTime(150, time);
+                osc.frequency.exponentialRampToValueAtTime(50, time + 0.05);
+                osc.frequency.exponentialRampToValueAtTime(30, time + 0.1);
+
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(200, time);
+                filter.Q.setValueAtTime(1, time);
+
+                gain.gain.setValueAtTime(volume, time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.audioContext.destination);
+
+                osc.start(time);
+                osc.stop(time + 0.3);
+            }
+
+            playSnare(time, volume = 0.7) {
+                const noise = this.createNoiseBuffer();
+                const noiseSource = this.audioContext.createBufferSource();
+                noiseSource.buffer = noise;
+                
+                const noiseFilter = this.audioContext.createBiquadFilter();
+                noiseFilter.type = 'highpass';
+                noiseFilter.frequency.setValueAtTime(1000, time);
+                
+                const noiseGain = this.audioContext.createGain();
+                noiseGain.gain.setValueAtTime(volume * 0.7, time);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
+
+                noiseSource.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(this.audioContext.destination);
+
+                const osc = this.audioContext.createOscillator();
+                osc.type = 'triangle';
+                const oscGain = this.audioContext.createGain();
+                osc.frequency.setValueAtTime(200, time);
+                osc.frequency.exponentialRampToValueAtTime(100, time + 0.1);
+                oscGain.gain.setValueAtTime(volume * 0.3, time);
+                oscGain.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
+
+                osc.connect(oscGain);
+                oscGain.connect(this.audioContext.destination);
+
+                noiseSource.start(time);
+                noiseSource.stop(time + 0.15);
+                osc.start(time);
+                osc.stop(time + 0.1);
+            }
+
+            playHiHat(time, volume = 0.6) {
+                const noise = this.createNoiseBuffer();
+                const noiseSource = this.audioContext.createBufferSource();
+                noiseSource.buffer = noise;
+
+                const filter = this.audioContext.createBiquadFilter();
+                filter.type = 'highpass';
+                filter.frequency.setValueAtTime(7000, time);
+                filter.Q.setValueAtTime(1, time);
+
+                const gain = this.audioContext.createGain();
+                gain.gain.setValueAtTime(volume, time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05);
+
+                noiseSource.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.audioContext.destination);
+
+                noiseSource.start(time);
+                noiseSource.stop(time + 0.05);
+            }
+
+            playBass(time, volume = 0.75) {
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(55, time);
+                gain.gain.setValueAtTime(volume, time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + 0.4);
+
+                osc.connect(gain);
+                gain.connect(this.audioContext.destination);
+
+                osc.start(time);
+                osc.stop(time + 0.4);
+            }
+
+            createNoiseBuffer() {
+                const bufferSize = this.audioContext.sampleRate * 0.5;
+                const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+                const output = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = Math.random() * 2 - 1;
+                }
+                return buffer;
+            }
+
+            scheduler() {
+                try {
+                    if (this.audioContext.state !== 'running') {
+                        this.debugLogger.logWarning(`AudioContext suspended (${this.audioContext.state})`);
+                        this.audioContext.resume();
+                    }
+
+                    while (this.nextNoteTime < this.audioContext.currentTime + this.scheduleAheadTime) {
+                        this.scheduleCurrentStep(this.nextNoteTime);
+                        this.nextNote();
+                    }
+
+                    this.updateDebugStats();
+                    
+                } catch (error) {
+                    this.debugLogger.logError(error, 'scheduler');
+                    this.stats.audioErrors++;
+                }
+            }
+
+            scheduleCurrentStep(time) {
+                this.tracks.forEach(track => {
+                    if (this.pattern[track][this.currentStep]) {
+                        this.scheduleNote(track, time);
+                        
+                        const button = document.querySelector(
+                            `[data-track="${track}"][data-step="${this.currentStep}"]`
+                        );
+                        if (button) {
+                            const delay = (time - this.audioContext.currentTime) * 1000;
+                            setTimeout(() => {
+                                button.classList.add('playing');
+                                setTimeout(() => button.classList.remove('playing'), 100);
+                            }, Math.max(0, delay));
+                        }
+                    }
+                });
+
+                const delay = (time - this.audioContext.currentTime) * 1000;
+                setTimeout(() => this.updateCurrentStepUI(this.currentStep), Math.max(0, delay));
+            }
+
+            nextNote() {
+                this.nextNoteTime += this.secondsPer16thNote;
+                this.currentStep = (this.currentStep + 1) % 16;
+            }
+
+            async play() {
+                if (!this.isInitialized) {
+                    alert('Please click the loading screen first to initialize audio.');
+                    return;
+                }
+
+                if (this.isPlaying) return;
+
+                try {
+                    if (this.audioContext.state !== 'running') {
+                        await this.audioContext.resume();
+                        let attempts = 0;
+                        while (this.audioContext.state !== 'running' && attempts < 10) {
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                            attempts++;
+                        }
+                        if (this.audioContext.state !== 'running') {
+                            throw new Error(`Cannot start: AudioContext is ${this.audioContext.state}`);
+                        }
+                    }
+
+                    this.isPlaying = true;
+                    this.currentStep = 0;
+                    this.nextNoteTime = this.audioContext.currentTime + 0.005;
+                    
+                    this.scheduler();
+                    this.timerID = setInterval(() => this.scheduler(), this.lookahead);
+
+                    document.getElementById('playBtn').disabled = true;
+                    document.getElementById('stopBtn').disabled = false;
+                    
+                    this.debugLogger.logEvent('▶️ Playback started', {
+                        contextState: this.audioContext.state,
+                        tempo: this.tempo
+                    }, 'success');
+                    
+                } catch (error) {
+                    this.debugLogger.logError(error, 'play');
+                    this.isPlaying = false;
+                    alert('Failed to start playback: ' + error.message);
+                }
+            }
+
+            stop() {
+                if (!this.isPlaying) return;
+
+                this.isPlaying = false;
+                clearInterval(this.timerID);
+                this.currentStep = 0;
+
+                document.querySelectorAll('.current-step').forEach(el => el.classList.remove('current-step'));
+                document.getElementById('playBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                document.getElementById('currentStepDisplay').textContent = '0';
+
+                this.debugLogger.logEvent('⏹️ Playback stopped', {
+                    notesScheduled: this.stats.notesScheduled,
+                    timingErrors: this.stats.timingErrors.length,
+                    audioErrors: this.stats.audioErrors
+                }, 'info');
+            }
+
+            updateDebugStats() {
+                const report = this.debugLogger.generateReport();
+                const statsDiv = document.getElementById('debugStats');
+                
+                document.getElementById('contextStateDisplay').textContent = 
+                    this.audioContext?.state || '-';
+                document.getElementById('nodesCreatedDisplay').textContent = 
+                    report.performance.totalNodesCreated;
+
+                statsDiv.innerHTML = `
+                    <h3>🔊 Real-time Debug Statistics</h3>
+                    
+                    <h3>Performance Metrics</h3>
+                    <pre>${JSON.stringify(report.performance, null, 2)}</pre>
+                    
+                    <h3>Timing Analysis</h3>
+                    <pre>${JSON.stringify(report.timing, null, 2)}</pre>
+                    
+                    <h3>AudioContext State</h3>
+                    <pre>${JSON.stringify(report.audioContext, null, 2)}</pre>
+                    
+                    <h3>Audio Graph</h3>
+                    <pre>Nodes: ${report.audioGraph.totalNodes} | Connections: ${report.audioGraph.totalConnections}</pre>
+                `;
+            }
+        }
+
+        // Initialize
+        window.drumMachine = new DrumMachineDebug();
+    </script>
+</body>
+</html>

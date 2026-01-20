@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drum Pattern Sequencer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            color: #ffffff;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: rgba(30, 30, 46, 0.9);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2em;
+            background: linear-gradient(90deg, #00d4ff, #9d4edd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .sequencer {
+            background: rgba(20, 20, 30, 0.6);
+            border-radius: 12px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        .grid-container {
+            display: table;
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+        }
+
+        .grid-row {
+            display: table-row;
+        }
+
+        .row-label {
+            display: table-cell;
+            vertical-align: middle;
+            padding: 10px 15px;
+            font-weight: 600;
+            font-size: 0.95em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: rgba(30, 30, 46, 0.8);
+            border-right: 2px solid rgba(255, 255, 255, 0.1);
+            min-width: 80px;
+            position: sticky;
+            left: 0;
+            z-index: 10;
+        }
+
+        .row-label.kick { color: #ff6b6b; }
+        .row-label.snare { color: #4ecdc4; }
+        .row-label.hihat { color: #ffe66d; }
+        .row-label.bass { color: #a8dadc; }
+
+        .steps-container {
+            display: table-cell;
+            padding: 0;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(16, 1fr);
+            gap: 6px;
+            padding: 8px;
+        }
+
+        .step-button {
+            width: 45px;
+            height: 45px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(40, 40, 60, 0.8);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .step-button:hover {
+            transform: scale(1.05);
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(60, 60, 80, 0.9);
+        }
+
+        .step-button:active {
+            transform: scale(0.95);
+        }
+
+        /* Active state styles for each instrument */
+        .step-button.active.kick {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+            border-color: #ff6b6b;
+            box-shadow: 0 0 15px rgba(255, 107, 107, 0.6);
+        }
+
+        .step-button.active.snare {
+            background: linear-gradient(135deg, #4ecdc4, #44a8a0);
+            border-color: #4ecdc4;
+            box-shadow: 0 0 15px rgba(78, 205, 196, 0.6);
+        }
+
+        .step-button.active.hihat {
+            background: linear-gradient(135deg, #ffe66d, #f4d35e);
+            border-color: #ffe66d;
+            box-shadow: 0 0 15px rgba(255, 230, 109, 0.6);
+        }
+
+        .step-button.active.bass {
+            background: linear-gradient(135deg, #a8dadc, #8ac7c9);
+            border-color: #a8dadc;
+            box-shadow: 0 0 15px rgba(168, 218, 220, 0.6);
+        }
+
+        /* Playing state - current step indicator */
+        .step-button.playing {
+            border: 3px solid #ffffff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+        }
+
+        /* Beat markers (every 4 steps) */
+        .step-button:nth-child(4n+1) {
+            border-left-width: 3px;
+        }
+
+        .step-button:nth-child(1) {
+            border-left-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .step-button:nth-child(5),
+        .step-button:nth-child(9),
+        .step-button:nth-child(13) {
+            border-left-color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Controls */
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .control-button {
+            padding: 12px 30px;
+            font-size: 1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-button.play {
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            color: white;
+        }
+
+        .control-button.play:hover {
+            background: linear-gradient(135deg, #00bbee, #0088bb);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.4);
+        }
+
+        .control-button.stop {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+            color: white;
+        }
+
+        .control-button.stop:hover {
+            background: linear-gradient(135deg, #ee5a6f, #dd4a5f);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+        }
+
+        .control-button.clear {
+            background: linear-gradient(135deg, #9d4edd, #7b2cbf);
+            color: white;
+        }
+
+        .control-button.clear:hover {
+            background: linear-gradient(135deg, #8b3dcc, #6a1baf);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(157, 78, 221, 0.4);
+        }
+
+        .control-button:active {
+            transform: translateY(0);
+        }
+
+        .control-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .info {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .bpm-display {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #00d4ff;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+                margin-bottom: 20px;
+            }
+
+            .step-button {
+                width: 35px;
+                height: 35px;
+            }
+
+            .row-label {
+                font-size: 0.8em;
+                padding: 8px 10px;
+                min-width: 60px;
+            }
+
+            .steps {
+                gap: 4px;
+            }
+
+            .control-button {
+                padding: 10px 20px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🥁 Drum Pattern Sequencer</h1>
+        
+        <div class="sequencer">
+            <div class="grid-container">
+                <!-- Kick Row -->
+                <div class="grid-row">
+                    <div class="row-label kick">Kick</div>
+                    <div class="steps-container">
+                        <div class="steps" data-instrument="kick"></div>
+                    </div>
+                </div>
+
+                <!-- Snare Row -->
+                <div class="grid-row">
+                    <div class="row-label snare">Snare</div>
+                    <div class="steps-container">
+                        <div class="steps" data-instrument="snare"></div>
+                    </div>
+                </div>
+
+                <!-- Hi-Hat Row -->
+                <div class="grid-row">
+                    <div class="row-label hihat">Hi-Hat</div>
+                    <div class="steps-container">
+                        <div class="steps" data-instrument="hihat"></div>
+                    </div>
+                </div>
+
+                <!-- Bass Row -->
+                <div class="grid-row">
+                    <div class="row-label bass">Bass</div>
+                    <div class="steps-container">
+                        <div class="steps" data-instrument="bass"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="control-button play" id="playBtn">▶ Play</button>
+            <button class="control-button stop" id="stopBtn">⏹ Stop</button>
+            <button class="control-button clear" id="clearBtn">🗑 Clear</button>
+        </div>
+
+        <div class="bpm-display">120 BPM</div>
+        <div class="info">Click on the grid to program your pattern</div>
+    </div>
+
+    <script>
+        // Pattern data structure
+        const pattern = {
+            kick: new Array(16).fill(false),
+            snare: new Array(16).fill(false),
+            hihat: new Array(16).fill(false),
+            bass: new Array(16).fill(false)
+        };
+
+        // Playback state
+        let isPlaying = false;
+        let currentStep = 0;
+        let intervalId = null;
+
+        // Initialize the grid
+        function initializeGrid() {
+            const instruments = ['kick', 'snare', 'hihat', 'bass'];
+            
+            instruments.forEach(instrument => {
+                const stepsContainer = document.querySelector(`.steps[data-instrument="${instrument}"]`);
+                
+                // Create 16 step buttons
+                for (let i = 0; i < 16; i++) {
+                    const button = document.createElement('button');
+                    button.className = `step-button ${instrument}`;
+                    button.dataset.instrument = instrument;
+                    button.dataset.step = i;
+                    
+                    // Add click handler
+                    button.addEventListener('click', () => toggleStep(instrument, i, button));
+                    
+                    stepsContainer.appendChild(button);
+                }
+            });
+        }
+
+        // Toggle step on/off
+        function toggleStep(instrument, step, button) {
+            pattern[instrument][step] = !pattern[instrument][step];
+            button.classList.toggle('active');
+            
+            // Play a preview sound when toggling (placeholder for now)
+            if (pattern[instrument][step]) {
+                console.log(`${instrument} enabled at step ${step}`);
+                // TODO: Play preview sound here
+            }
+        }
+
+        // Play/Pause functionality
+        document.getElementById('playBtn').addEventListener('click', () => {
+            if (!isPlaying) {
+                startPlayback();
+            } else {
+                pausePlayback();
+            }
+        });
+
+        // Stop functionality
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            stopPlayback();
+        });
+
+        // Clear all patterns
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            if (confirm('Clear all patterns?')) {
+                clearAllPatterns();
+            }
+        });
+
+        function startPlayback() {
+            isPlaying = true;
+            document.getElementById('playBtn').textContent = '⏸ Pause';
+            
+            // 120 BPM = 2 beats per second = 500ms per beat
+            // 16th notes = 500ms / 4 = 125ms per step
+            const stepDuration = 125; // milliseconds
+            
+            intervalId = setInterval(() => {
+                playStep(currentStep);
+                currentStep = (currentStep + 1) % 16;
+            }, stepDuration);
+        }
+
+        function pausePlayback() {
+            isPlaying = false;
+            document.getElementById('playBtn').textContent = '▶ Play';
+            clearInterval(intervalId);
+            clearPlayingIndicators();
+        }
+
+        function stopPlayback() {
+            isPlaying = false;
+            document.getElementById('playBtn').textContent = '▶ Play';
+            clearInterval(intervalId);
+            currentStep = 0;
+            clearPlayingIndicators();
+        }
+
+        function playStep(step) {
+            // Clear previous playing indicators
+            clearPlayingIndicators();
+            
+            // Highlight current step
+            const instruments = ['kick', 'snare', 'hihat', 'bass'];
+            instruments.forEach(instrument => {
+                const button = document.querySelector(
+                    `.step-button[data-instrument="${instrument}"][data-step="${step}"]`
+                );
+                button.classList.add('playing');
+                
+                // Trigger sound if step is active
+                if (pattern[instrument][step]) {
+                    console.log(`Playing ${instrument} at step ${step}`);
+                    // TODO: Trigger Web Audio API sound here
+                }
+            });
+        }
+
+        function clearPlayingIndicators() {
+            document.querySelectorAll('.step-button.playing').forEach(button => {
+                button.classList.remove('playing');
+            });
+        }
+
+        function clearAllPatterns() {
+            // Reset pattern data
+            Object.keys(pattern).forEach(instrument => {
+                pattern[instrument].fill(false);
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.step-button.active').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Stop playback
+            if (isPlaying) {
+                stopPlayback();
+            }
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeGrid();
+            console.log('Drum sequencer initialized!');
+            console.log('Pattern structure:', pattern);
+        });
+
+        // Export pattern data (for debugging/future use)
+        window.getPattern = () => pattern;
+        window.setPattern = (newPattern) => {
+            Object.keys(newPattern).forEach(instrument => {
+                if (pattern[instrument]) {
+                    pattern[instrument] = [...newPattern[instrument]];
+                    // Update UI
+                    newPattern[instrument].forEach((active, step) => {
+                        const button = document.querySelector(
+                            `.step-button[data-instrument="${instrument}"][data-step="${step}"]`
+                        );
+                        if (active) {
+                            button.classList.add('active');
+                        } else {
+                            button.classList.remove('active');
+                        }
+                    });
+                }
+            });
+        };
+    </script>
+</body>
+</html>

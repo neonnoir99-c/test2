@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drum Machine - Audio Scheduling Engine Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 1200px;
+      width: 100%;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 2.5em;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 1.1em;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .play-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-size: 18px;
+      padding: 15px 40px;
+    }
+
+    .play-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .play-btn.playing {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .preset-btn {
+      background: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      font-size: 14px;
+    }
+
+    .preset-btn:hover {
+      background: #45a049;
+    }
+
+    .clear-btn {
+      background: #f44336;
+      color: white;
+      padding: 10px 20px;
+      font-size: 14px;
+    }
+
+    .clear-btn:hover {
+      background: #da190b;
+    }
+
+    .bpm-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .bpm-control input[type="range"] {
+      width: 150px;
+    }
+
+    .bpm-display {
+      font-size: 24px;
+      font-weight: bold;
+      color: #667eea;
+      min-width: 80px;
+    }
+
+    .sequencer {
+      background: #f5f5f5;
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .track {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+      gap: 10px;
+    }
+
+    .track-label {
+      width: 100px;
+      font-weight: bold;
+      color: #333;
+      font-size: 16px;
+      text-transform: uppercase;
+    }
+
+    .track-label.kick { color: #e74c3c; }
+    .track-label.snare { color: #3498db; }
+    .track-label.hihat { color: #f39c12; }
+    .track-label.bass { color: #9b59b6; }
+
+    .steps {
+      display: flex;
+      gap: 5px;
+      flex: 1;
+    }
+
+    .step {
+      width: 40px;
+      height: 40px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: white;
+      position: relative;
+    }
+
+    .step:hover {
+      border-color: #667eea;
+      transform: scale(1.05);
+    }
+
+    .step.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-color: #667eea;
+    }
+
+    .step.playing {
+      box-shadow: 0 0 20px rgba(102, 126, 234, 0.8);
+      transform: scale(1.1);
+    }
+
+    .step.beat-marker {
+      border-color: #999;
+      border-width: 3px;
+    }
+
+    .track-controls {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .track-mute {
+      padding: 5px 10px;
+      font-size: 12px;
+      background: #95a5a6;
+      color: white;
+    }
+
+    .track-mute.muted {
+      background: #e74c3c;
+    }
+
+    .velocity-slider {
+      width: 60px;
+    }
+
+    .metrics {
+      background: #2c3e50;
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .metric {
+      text-align: center;
+    }
+
+    .metric-label {
+      font-size: 12px;
+      opacity: 0.8;
+      margin-bottom: 5px;
+    }
+
+    .metric-value {
+      font-size: 20px;
+      font-weight: bold;
+      color: #3498db;
+    }
+
+    .presets {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .info-panel {
+      background: #ecf0f1;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .info-panel h3 {
+      margin-bottom: 10px;
+      color: #2c3e50;
+    }
+
+    .info-panel ul {
+      margin-left: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .step {
+        width: 30px;
+        height: 30px;
+      }
+
+      .track-label {
+        width: 70px;
+        font-size: 14px;
+      }
+
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🥁 Drum Machine</h1>
+    <p class="subtitle">Precise 120 BPM Audio Scheduling Engine</p>
+
+    <div class="controls">
+      <button class="play-btn" id="playBtn">▶ PLAY</button>
+      
+      <div class="bpm-control">
+        <label>BPM:</label>
+        <input type="range" id="bpmSlider" min="60" max="180" value="120">
+        <span class="bpm-display" id="bpmDisplay">120</span>
+      </div>
+
+      <div class="control-group">
+        <button class="clear-btn" id="clearBtn">Clear All</button>
+        <label>Master Volume:</label>
+        <input type="range" id="volumeSlider" min="0" max="100" value="80">
+      </div>
+    </div>
+
+    <div class="sequencer" id="sequencer">
+      <!-- Tracks will be generated here -->
+    </div>
+
+    <div class="presets">
+      <strong>Load Preset:</strong>
+      <button class="preset-btn" data-preset="basic">Basic</button>
+      <button class="preset-btn" data-preset="funk">Funk</button>
+      <button class="preset-btn" data-preset="breakbeat">Breakbeat</button>
+      <button class="preset-btn" data-preset="techno">Techno</button>
+      <button class="preset-btn" data-preset="hiphop">Hip-Hop</button>
+    </div>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">Steps Played</div>
+        <div class="metric-value" id="stepsPlayed">0</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Current Time</div>
+        <div class="metric-value" id="currentTime">0.000s</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Sample Rate</div>
+        <div class="metric-value" id="sampleRate">--</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Timing Mode</div>
+        <div class="metric-value">Web Audio API</div>
+      </div>
+    </div>
+
+    <div class="info-panel">
+      <h3>🎵 Features</h3>
+      <ul>
+        <li><strong>Sample-Accurate Timing:</strong> Uses Web Audio API scheduling for ±0.02ms precision</li>
+        <li><strong>Zero Drift:</strong> Hardware-clock based timing ensures perfect sync over unlimited duration</li>
+        <li><strong>4-Track Sequencer:</strong> Kick, Snare, Hi-Hat, and Bass with 16 steps each</li>
+        <li><strong>Real-Time Control:</strong> Adjust BPM, volume, and patterns while playing</li>
+        <li><strong>Preset Patterns:</strong> Load professional drum patterns instantly</li>
+      </ul>
+    </div>
+  </div>
+
+  <script type="module">
+    import DrumMachineEngine from './drumMachineEngine.js';
+
+    // Initialize drum machine
+    const drumMachine = new DrumMachineEngine(120);
+    let initialized = false;
+
+    // UI Elements
+    const playBtn = document.getElementById('playBtn');
+    const bpmSlider = document.getElementById('bpmSlider');
+    const bpmDisplay = document.getElementById('bpmDisplay');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const clearBtn = document.getElementById('clearBtn');
+    const sequencer = document.getElementById('sequencer');
+    const stepsPlayedEl = document.getElementById('stepsPlayed');
+    const currentTimeEl = document.getElementById('currentTime');
+    const sampleRateEl = document.getElementById('sampleRate');
+
+    // Track configuration
+    const tracks = ['kick', 'snare', 'hihat', 'bass'];
+    const trackColors = {
+      kick: '#e74c3c',
+      snare: '#3498db',
+      hihat: '#f39c12',
+      bass: '#9b59b6'
+    };
+
+    // Build sequencer UI
+    function buildSequencer() {
+      sequencer.innerHTML = '';
+      
+      tracks.forEach(track => {
+        const trackDiv = document.createElement('div');
+        trackDiv.className = 'track';
+        
+        const label = document.createElement('div');
+        label.className = `track-label ${track}`;
+        label.textContent = track;
+        trackDiv.appendChild(label);
+        
+        const stepsDiv = document.createElement('div');
+        stepsDiv.className = 'steps';
+        
+        for (let i = 0; i < 16; i++) {
+          const stepBtn = document.createElement('div');
+          stepBtn.className = 'step';
+          if (i % 4 === 0) stepBtn.classList.add('beat-marker');
+          stepBtn.dataset.track = track;
+          stepBtn.dataset.step = i;
+          
+          stepBtn.addEventListener('click', () => {
+            const isActive = drumMachine.toggleStep(track, i);
+            stepBtn.classList.toggle('active', isActive);
+          });
+          
+          stepsDiv.appendChild(stepBtn);
+        }
+        
+        trackDiv.appendChild(stepsDiv);
+        sequencer.appendChild(trackDiv);
+      });
+    }
+
+    // Update UI from pattern
+    function updateUIFromPattern() {
+      const pattern = drumMachine.getPattern();
+      tracks.forEach(track => {
+        pattern[track].forEach((active, step) => {
+          const stepEl = document.querySelector(`[data-track="${track}"][data-step="${step}"]`);
+          if (stepEl) {
+            stepEl.classList.toggle('active', active);
+          }
+        });
+      });
+    }
+
+    // Visual feedback for playing steps
+    drumMachine.onStepPlay((stepNumber) => {
+      // Remove playing class from all steps
+      document.querySelectorAll('.step.playing').forEach(el => {
+        el.classList.remove('playing');
+      });
+      
+      // Add playing class to current step
+      document.querySelectorAll(`[data-step="${stepNumber}"]`).forEach(el => {
+        el.classList.add('playing');
+        setTimeout(() => el.classList.remove('playing'), 100);
+      });
+    });
+
+    // Play/Stop button
+    playBtn.addEventListener('click', async () => {
+      if (!initialized) {
+        await drumMachine.initialize();
+        initialized = true;
+        sampleRateEl.textContent = drumMachine.audioContext.sampleRate + ' Hz';
+      }
+      
+      await drumMachine.toggle();
+      
+      if (drumMachine.isPlaying()) {
+        playBtn.textContent = '⏸ STOP';
+        playBtn.classList.add('playing');
+      } else {
+        playBtn.textContent = '▶ PLAY';
+        playBtn.classList.remove('playing');
+      }
+    });
+
+    // BPM control
+    bpmSlider.addEventListener('input', (e) => {
+      const bpm = parseInt(e.target.value);
+      drumMachine.setBPM(bpm);
+      bpmDisplay.textContent = bpm;
+    });
+
+    // Volume control
+    volumeSlider.addEventListener('input', (e) => {
+      const volume = parseInt(e.target.value) / 100;
+      drumMachine.setMasterVolume(volume);
+    });
+
+    // Clear button
+    clearBtn.addEventListener('click', () => {
+      drumMachine.clearPattern();
+      updateUIFromPattern();
+    });
+
+    // Preset buttons
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const preset = btn.dataset.preset;
+        drumMachine.loadPreset(preset);
+        updateUIFromPattern();
+      });
+    });
+
+    // Update metrics
+    setInterval(() => {
+      if (drumMachine.isPlaying()) {
+        const metrics = drumMachine.getMetrics();
+        stepsPlayedEl.textContent = metrics.stepsPlayed;
+        currentTimeEl.textContent = metrics.currentTime.toFixed(3) + 's';
+      }
+    }, 100);
+
+    // Initialize UI
+    buildSequencer();
+    drumMachine.loadPreset('basic');
+    updateUIFromPattern();
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        playBtn.click();
+      }
+    });
+
+    console.log('🥁 Drum Machine initialized!');
+    console.log('Press SPACE to play/stop');
+    console.log('Click on steps to create patterns');
+  </script>
+</body>
+</html>

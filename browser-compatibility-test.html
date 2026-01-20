@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browser Compatibility Test - Drum Machine</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .test-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .test-card h2 {
+            margin-bottom: 15px;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-left: auto;
+        }
+
+        .status.pending { background: #666; }
+        .status.running { background: #ff9800; animation: pulse 1s infinite; }
+        .status.pass { background: #4caf50; }
+        .status.fail { background: #f44336; }
+        .status.warning { background: #ff9800; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 3px solid #667eea;
+        }
+
+        .info-label {
+            font-size: 0.9em;
+            color: #a0a0a0;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .test-result {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-name {
+            color: #a0a0a0;
+        }
+
+        .metric-value {
+            font-weight: bold;
+        }
+
+        .metric-value.good { color: #4caf50; }
+        .metric-value.warning { color: #ff9800; }
+        .metric-value.bad { color: #f44336; }
+
+        .log-container {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .log-time {
+            color: #666;
+            margin-right: 10px;
+        }
+
+        .log-info { color: #2196f3; }
+        .log-success { color: #4caf50; }
+        .log-warning { color: #ff9800; }
+        .log-error { color: #f44336; }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .compatibility-matrix {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .browser-card {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .browser-card.current {
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .browser-card.pass {
+            border-color: #4caf50;
+        }
+
+        .browser-card.fail {
+            border-color: #f44336;
+        }
+
+        .browser-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .browser-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .browser-score {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .download-btn {
+            background: #4caf50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .download-btn:hover {
+            background: #45a049;
+        }
+
+        #startOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            cursor: pointer;
+        }
+
+        #startOverlay.hidden {
+            display: none;
+        }
+
+        #startOverlay h2 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        #startOverlay p {
+            font-size: 1.5em;
+            color: #a0a0a0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Start Overlay -->
+    <div id="startOverlay">
+        <h2>🎵 Browser Compatibility Test</h2>
+        <p>Click anywhere to initialize audio and start testing</p>
+    </div>
+
+    <div class="container">
+        <h1>🌐 Drum Machine Browser Compatibility Test</h1>
+
+        <!-- Browser Detection -->
+        <div class="test-card">
+            <h2>🔍 Browser Detection</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Browser</div>
+                    <div class="info-value" id="browserName">Detecting...</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Version</div>
+                    <div class="info-value" id="browserVersion">Detecting...</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Platform</div>
+                    <div class="info-value" id="platform">Detecting...</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">User Agent</div>
+                    <div class="info-value" style="font-size: 0.8em; word-break: break-all;" id="userAgent">Detecting...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Web Audio API Support -->
+        <div class="test-card">
+            <h2>
+                🔊 Web Audio API Support
+                <span class="status pending" id="audioStatus">PENDING</span>
+            </h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">AudioContext Support</div>
+                    <div class="info-value" id="audioContextSupport">Checking...</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Sample Rate</div>
+                    <div class="info-value" id="sampleRate">N/A</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Base Latency</div>
+                    <div class="info-value" id="baseLatency">N/A</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Output Latency</div>
+                    <div class="info-value" id="outputLatency">N/A</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Controls -->
+        <div class="test-card">
+            <h2>🎮 Test Controls</h2>
+            <button class="btn btn-primary" id="runAllBtn">▶ Run All Tests</button>
+            <button class="btn btn-secondary" id="timingBtn">⏱️ Timing Test</button>
+            <button class="btn btn-secondary" id="audioBtn">🔊 Audio Test</button>
+            <button class="btn btn-secondary" id="performanceBtn">⚡ Performance Test</button>
+            <button class="btn btn-secondary" id="exportBtn">📥 Export Report</button>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress" style="width: 0%">0%</div>
+            </div>
+        </div>
+
+        <!-- Test Results -->
+        <div class="test-card">
+            <h2>
+                📊 Test Results
+                <span class="status pending" id="resultsStatus">PENDING</span>
+            </h2>
+            <div class="test-result" id="testResults">
+                <p style="text-align: center; color: #a0a0a0;">Run tests to see results</p>
+            </div>
+        </div>
+
+        <!-- Browser Compatibility Matrix -->
+        <div class="test-card">
+            <h2>🌐 Browser Compatibility Matrix</h2>
+            <div class="compatibility-matrix">
+                <div class="browser-card" id="chromeCard">
+                    <div class="browser-icon">🔵</div>
+                    <div class="browser-name">Chrome</div>
+                    <div class="browser-score" style="color: #4caf50;">Excellent</div>
+                    <div style="font-size: 0.9em; color: #a0a0a0;">Recommended</div>
+                </div>
+                <div class="browser-card" id="firefoxCard">
+                    <div class="browser-icon">🦊</div>
+                    <div class="browser-name">Firefox</div>
+                    <div class="browser-score" style="color: #4caf50;">Good</div>
+                    <div style="font-size: 0.9em; color: #a0a0a0;">Fully Supported</div>
+                </div>
+                <div class="browser-card" id="safariCard">
+                    <div class="browser-icon">🧭</div>
+                    <div class="browser-name">Safari</div>
+                    <div class="browser-score" style="color: #ff9800;">Acceptable</div>
+                    <div style="font-size: 0.9em; color: #a0a0a0;">Higher Latency</div>
+                </div>
+                <div class="browser-card" id="edgeCard">
+                    <div class="browser-icon">🌊</div>
+                    <div class="browser-name">Edge</div>
+                    <div class="browser-score" style="color: #4caf50;">Excellent</div>
+                    <div style="font-size: 0.9em; color: #a0a0a0;">Chromium-based</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Log -->
+        <div class="test-card">
+            <h2>📝 Test Log</h2>
+            <div class="log-container" id="logContainer">
+                <div class="log-entry log-info">
+                    <span class="log-time">[00:00:00]</span>
+                    Test suite initialized. Click "Run All Tests" to begin.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===================================
+        // Test Suite
+        // ===================================
+        class BrowserCompatibilityTest {
+            constructor() {
+                this.audioContext = null;
+                this.testResults = {
+                    browser: {},
+                    audio: {},
+                    timing: {},
+                    performance: {}
+                };
+                this.startTime = Date.now();
+                this.isRunning = false;
+
+                this.init();
+            }
+
+            init() {
+                this.detectBrowser();
+                this.setupEventListeners();
+                this.highlightCurrentBrowser();
+
+                // Wait for user interaction
+                const overlay = document.getElementById('startOverlay');
+                overlay.addEventListener('click', async () => {
+                    await this.initAudio();
+                    overlay.classList.add('hidden');
+                    this.log('Audio initialized. Ready to test.', 'success');
+                });
+            }
+
+            // ===================================
+            // Browser Detection
+            // ===================================
+            detectBrowser() {
+                const ua = navigator.userAgent;
+                let name = 'Unknown';
+                let version = 'Unknown';
+                let engine = 'Unknown';
+
+                // Detect browser
+                if (ua.includes('Edg/')) {
+                    name = 'Edge';
+                    version = ua.match(/Edg\/(\d+\.\d+)/)?.[1] || 'Unknown';
+                    engine = 'Chromium';
+                } else if (ua.includes('Chrome/') && !ua.includes('Edg')) {
+                    name = 'Chrome';
+                    version = ua.match(/Chrome\/(\d+\.\d+)/)?.[1] || 'Unknown';
+                    engine = 'Chromium';
+                } else if (ua.includes('Firefox/')) {
+                    name = 'Firefox';
+                    version = ua.match(/Firefox\/(\d+\.\d+)/)?.[1] || 'Unknown';
+                    engine = 'Gecko';
+                } else if (ua.includes('Safari/') && !ua.includes('Chrome')) {
+                    name = 'Safari';
+                    version = ua.match(/Version\/(\d+\.\d+)/)?.[1] || 'Unknown';
+                    engine = 'WebKit';
+                }
+
+                // Detect platform
+                let platform = navigator.platform;
+                if (/iPhone|iPad|iPod/.test(ua)) {
+                    platform = 'iOS';
+                } else if (/Android/.test(ua)) {
+                    platform = 'Android';
+                } else if (/Mac/.test(platform)) {
+                    platform = 'macOS';
+                } else if (/Win/.test(platform)) {
+                    platform = 'Windows';
+                } else if (/Linux/.test(platform)) {
+                    platform = 'Linux';
+                }
+
+                this.testResults.browser = { name, version, engine, platform, ua };
+
+                // Update UI
+                document.getElementById('browserName').textContent = `${name} (${engine})`;
+                document.getElementById('browserVersion').textContent = version;
+                document.getElementById('platform').textContent = platform;
+                document.getElementById('userAgent').textContent = ua;
+
+                this.log(`Detected: ${name} ${version} on ${platform}`, 'info');
+            }
+
+            highlightCurrentBrowser() {
+                const name = this.testResults.browser.name.toLowerCase();
+                const cards = {
+                    'chrome': 'chromeCard',
+                    'firefox': 'firefoxCard',
+                    'safari': 'safariCard',
+                    'edge': 'edgeCard'
+                };
+
+                if (cards[name]) {
+                    document.getElementById(cards[name]).classList.add('current');
+                }
+            }
+
+            // ===================================
+            // Audio Initialization
+            // ===================================
+            async initAudio() {
+                try {
+                    this.log('Initializing AudioContext...', 'info');
+                    
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // Check support
+                    const hasAudioContext = !!window.AudioContext || !!window.webkitAudioContext;
+                    document.getElementById('audioContextSupport').textContent = hasAudioContext ? '✅ Yes' : '❌ No';
+
+                    if (!hasAudioContext) {
+                        throw new Error('AudioContext not supported');
+                    }
+
+                    // Resume if needed
+                    if (this.audioContext.state !== 'running') {
+                        await this.audioContext.resume();
+                        
+                        // Wait for running state
+                        let attempts = 0;
+                        while (this.audioContext.state !== 'running' && attempts < 20) {
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                            attempts++;
+                        }
+                    }
+
+                    if (this.audioContext.state !== 'running') {
+                        throw new Error(`AudioContext state: ${this.audioContext.state}`);
+                    }
+
+                    // Get audio properties
+                    const sampleRate = this.audioContext.sampleRate;
+                    const baseLatency = this.audioContext.baseLatency || 0;
+                    const outputLatency = this.audioContext.outputLatency || 0;
+                    const totalLatency = (baseLatency + outputLatency) * 1000;
+
+                    this.testResults.audio = {
+                        supported: true,
+                        sampleRate,
+                        baseLatency: baseLatency * 1000,
+                        outputLatency: outputLatency * 1000,
+                        totalLatency,
+                        state: this.audioContext.state
+                    };
+
+                    // Update UI
+                    document.getElementById('sampleRate').textContent = `${sampleRate} Hz`;
+                    document.getElementById('baseLatency').textContent = `${(baseLatency * 1000).toFixed(2)} ms`;
+                    document.getElementById('outputLatency').textContent = `${(outputLatency * 1000).toFixed(2)} ms`;
+                    
+                    const statusBadge = document.getElementById('audioStatus');
+                    statusBadge.textContent = 'PASS';
+                    statusBadge.className = 'status pass';
+
+                    this.log(`AudioContext initialized: ${sampleRate}Hz, ${totalLatency.toFixed(1)}ms latency`, 'success');
+
+                } catch (error) {
+                    this.log(`Audio initialization failed: ${error.message}`, 'error');
+                    
+                    const statusBadge = document.getElementById('audioStatus');
+                    statusBadge.textContent = 'FAIL';
+                    statusBadge.className = 'status fail';
+
+                    this.testResults.audio = {
+                        supported: false,
+                        error: error.message
+                    };
+                }
+            }
+
+            // ===================================
+            // Test Runners
+            // ===================================
+            async runAllTests() {
+                if (this.isRunning) return;
+                if (!this.audioContext) {
+                    this.log('Please click the overlay to initialize audio first', 'error');
+                    return;
+                }
+
+                this.isRunning = true;
+                this.log('=== Starting Full Test Suite ===', 'info');
+
+                try {
+                    // Timing test
+                    this.updateProgress(10);
+                    await this.runTimingTest();
+
+                    // Audio quality test
+                    this.updateProgress(40);
+                    await this.runAudioTest();
+
+                    // Performance test
+                    this.updateProgress(70);
+                    await this.runPerformanceTest();
+
+                    this.updateProgress(100);
+                    this.displayResults();
+                    this.log('=== Test Suite Complete ===', 'success');
+
+                } catch (error) {
+                    this.log(`Test suite error: ${error.message}`, 'error');
+                } finally {
+                    this.isRunning = false;
+                }
+            }
+
+            async runTimingTest() {
+                this.log('Running timing accuracy test...', 'info');
+
+                const testDuration = 10; // 10 seconds
+                const bpm = 120;
+                const stepDuration = 60 / bpm / 4; // 16th notes
+                const expectedSteps = Math.floor(testDuration / stepDuration);
+
+                const timingData = [];
+                let currentStep = 0;
+                let nextNoteTime = this.audioContext.currentTime + 0.1;
+                const startTime = nextNoteTime;
+
+                return new Promise((resolve) => {
+                    const scheduleNote = (time, step) => {
+                        const scheduled = time;
+                        
+                        // Play test tone
+                        const osc = this.audioContext.createOscillator();
+                        const gain = this.audioContext.createGain();
+                        osc.frequency.value = 440;
+                        gain.gain.value = 0.05;
+                        osc.connect(gain);
+                        gain.connect(this.audioContext.destination);
+                        osc.start(time);
+                        osc.stop(time + 0.01);
+
+                        // Record timing
+                        setTimeout(() => {
+                            const actual = this.audioContext.currentTime;
+                            const error = Math.abs(actual - scheduled) * 1000;
+                            timingData.push({ scheduled, actual, error, step });
+                        }, (time - this.audioContext.currentTime) * 1000);
+                    };
+
+                    const scheduler = () => {
+                        while (nextNoteTime < this.audioContext.currentTime + 0.1 && currentStep < expectedSteps) {
+                            scheduleNote(nextNoteTime, currentStep);
+                            nextNoteTime += stepDuration;
+                            currentStep++;
+                        }
+
+                        if (currentStep < expectedSteps) {
+                            setTimeout(scheduler, 25);
+                        } else {
+                            setTimeout(() => {
+                                // Analyze results
+                                const errors = timingData.map(d => d.error);
+                                const avgError = errors.reduce((a, b) => a + b, 0) / errors.length;
+                                const maxError = Math.max(...errors);
+                                const variance = errors.reduce((sum, err) => sum + Math.pow(err - avgError, 2), 0) / errors.length;
+                                const jitter = Math.sqrt(variance);
+
+                                // Calculate drift
+                                const expectedEnd = startTime + (expectedSteps * stepDuration);
+                                const actualEnd = timingData[timingData.length - 1].scheduled;
+                                const drift = Math.abs(actualEnd - expectedEnd) * 1000;
+
+                                this.testResults.timing = {
+                                    avgError,
+                                    maxError,
+                                    jitter,
+                                    drift,
+                                    stepsCompleted: currentStep,
+                                    passed: avgError < 1 && jitter < 0.5 && drift < 5
+                                };
+
+                                this.log(`Timing: Avg=${avgError.toFixed(3)}ms, Jitter=${jitter.toFixed(3)}ms, Drift=${drift.toFixed(3)}ms`, 
+                                    this.testResults.timing.passed ? 'success' : 'warning');
+
+                                resolve();
+                            }, 1000);
+                        }
+                    };
+
+                    scheduler();
+                });
+            }
+
+            async runAudioTest() {
+                this.log('Running audio quality test...', 'info');
+
+                const testDuration = 5; // 5 seconds
+                let soundsPlayed = 0;
+
+                return new Promise((resolve) => {
+                    const playTestSound = (time) => {
+                        const osc = this.audioContext.createOscillator();
+                        const gain = this.audioContext.createGain();
+                        
+                        osc.frequency.setValueAtTime(440, time);
+                        gain.gain.setValueAtTime(0.1, time);
+                        gain.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
+                        
+                        osc.connect(gain);
+                        gain.connect(this.audioContext.destination);
+                        
+                        osc.start(time);
+                        osc.stop(time + 0.1);
+                        
+                        soundsPlayed++;
+                    };
+
+                    let currentTime = this.audioContext.currentTime + 0.1;
+                    for (let i = 0; i < testDuration * 4; i++) {
+                        playTestSound(currentTime);
+                        currentTime += 0.25;
+                    }
+
+                    setTimeout(() => {
+                        const latency = this.testResults.audio.totalLatency || 0;
+                        const qualityScore = Math.max(0, 100 - (latency / 2) - (soundsPlayed < testDuration * 4 ? 50 : 0));
+
+                        this.testResults.audio.qualityScore = qualityScore;
+                        this.testResults.audio.soundsPlayed = soundsPlayed;
+                        this.testResults.audio.passed = latency < 50 && qualityScore >= 70;
+
+                        this.log(`Audio: Latency=${latency.toFixed(1)}ms, Quality=${qualityScore.toFixed(0)}/100`, 
+                            this.testResults.audio.passed ? 'success' : 'warning');
+
+                        resolve();
+                    }, (testDuration + 1) * 1000);
+                });
+            }
+
+            async runPerformanceTest() {
+                this.log('Running performance test...', 'info');
+
+                const testDuration = 3000; // 3 seconds
+                let frameCount = 0;
+                let lastFrameTime = performance.now();
+                const frameTimes = [];
+
+                return new Promise((resolve) => {
+                    const startTime = performance.now();
+
+                    const measureFrame = (currentTime) => {
+                        if (currentTime - startTime >= testDuration) {
+                            // Calculate results
+                            const avgFrameTime = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
+                            const fps = 1000 / avgFrameTime;
+                            const droppedFrames = frameTimes.filter(t => t > 20).length;
+                            const dropRate = (droppedFrames / frameCount) * 100;
+
+                            this.testResults.performance = {
+                                fps,
+                                avgFrameTime,
+                                droppedFrames,
+                                dropRate,
+                                totalFrames: frameCount,
+                                passed: fps >= 55 && dropRate < 5
+                            };
+
+                            this.log(`Performance: ${fps.toFixed(1)}fps, ${dropRate.toFixed(1)}% dropped`, 
+                                this.testResults.performance.passed ? 'success' : 'warning');
+
+                            resolve();
+                            return;
+                        }
+
+                        frameCount++;
+                        const frameTime = currentTime - lastFrameTime;
+                        frameTimes.push(frameTime);
+                        lastFrameTime = currentTime;
+
+                        requestAnimationFrame(measureFrame);
+                    };
+
+                    requestAnimationFrame(measureFrame);
+                });
+            }
+
+            // ===================================
+            // Results Display
+            // ===================================
+            displayResults() {
+                const container = document.getElementById('testResults');
+                const { browser, audio, timing, performance } = this.testResults;
+
+                let html = '';
+
+                // Browser info
+                html += `<div class="metric">
+                    <span class="metric-name">Browser</span>
+                    <span class="metric-value">${browser.name} ${browser.version} on ${browser.platform}</span>
+                </div>`;
+
+                // Audio
+                if (audio.supported) {
+                    html += `<div class="metric">
+                        <span class="metric-name">Audio Support</span>
+                        <span class="metric-value good">✅ Supported</span>
+                    </div>`;
+                    html += `<div class="metric">
+                        <span class="metric-name">Sample Rate</span>
+                        <span class="metric-value">${audio.sampleRate} Hz</span>
+                    </div>`;
+                    html += `<div class="metric">
+                        <span class="metric-name">Total Latency</span>
+                        <span class="metric-value ${audio.totalLatency < 30 ? 'good' : audio.totalLatency < 50 ? 'warning' : 'bad'}">
+                            ${audio.totalLatency.toFixed(1)} ms
+                        </span>
+                    </div>`;
+                    if (audio.qualityScore !== undefined) {
+                        html += `<div class="metric">
+                            <span class="metric-name">Quality Score</span>
+                            <span class="metric-value ${audio.qualityScore >= 85 ? 'good' : audio.qualityScore >= 70 ? 'warning' : 'bad'}">
+                                ${audio.qualityScore.toFixed(0)} / 100
+                            </span>
+                        </div>`;
+                    }
+                } else {
+                    html += `<div class="metric">
+                        <span class="metric-name">Audio Support</span>
+                        <span class="metric-value bad">❌ Not Supported</span>
+                    </div>`;
+                }
+
+                // Timing
+                if (timing.avgError !== undefined) {
+                    html += `<div class="metric">
+                        <span class="metric-name">Average Timing Error</span>
+                        <span class="metric-value ${timing.avgError < 0.5 ? 'good' : timing.avgError < 1 ? 'warning' : 'bad'}">
+                            ${timing.avgError.toFixed(3)} ms
+                        </span>
+                    </div>`;
+                    html += `<div class="metric">
+                        <span class="metric-name">Timing Jitter</span>
+                        <span class="metric-value ${timing.jitter < 0.3 ? 'good' : timing.jitter < 0.5 ? 'warning' : 'bad'}">
+                            ${timing.jitter.toFixed(3)} ms
+                        </span>
+                    </div>`;
+                    html += `<div class="metric">
+                        <span class="metric-name">Cumulative Drift</span>
+                        <span class="metric-value ${timing.drift < 2 ? 'good' : timing.drift < 5 ? 'warning' : 'bad'}">
+                            ${timing.drift.toFixed(3)} ms
+                        </span>
+                    </div>`;
+                }
+
+                // Performance
+                if (performance.fps !== undefined) {
+                    html += `<div class="metric">
+                        <span class="metric-name">Frame Rate</span>
+                        <span class="metric-value ${performance.fps >= 58 ? 'good' : performance.fps >= 50 ? 'warning' : 'bad'}">
+                            ${performance.fps.toFixed(1)} fps
+                        </span>
+                    </div>`;
+                    html += `<div class="metric">
+                        <span class="metric-name">Dropped Frames</span>
+                        <span class="metric-value ${performance.dropRate < 2 ? 'good' : performance.dropRate < 5 ? 'warning' : 'bad'}">
+                            ${performance.dropRate.toFixed(1)}%
+                        </span>
+                    </div>`;
+                }
+
+                // Overall status
+                const allPassed = (!timing.passed === false) && (!audio.passed === false) && (!performance.passed === false);
+                const statusBadge = document.getElementById('resultsStatus');
+                statusBadge.textContent = allPassed ? 'PASS' : 'WARNING';
+                statusBadge.className = `status ${allPassed ? 'pass' : 'warning'}`;
+
+                container.innerHTML = html;
+            }
+
+            // ===================================
+            // Export Report
+            // ===================================
+            exportReport() {
+                const report = {
+                    timestamp: new Date().toISOString(),
+                    ...this.testResults
+                };
+
+                const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `drum-machine-test-${this.testResults.browser.name}-${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                this.log('Report exported successfully', 'success');
+            }
+
+            // ===================================
+            // Helpers
+            // ===================================
+            updateProgress(percent) {
+                const bar = document.getElementById('progress');
+                bar.style.width = `${percent}%`;
+                bar.textContent = `${percent}%`;
+            }
+
+            log(message, type = 'info') {
+                const container = document.getElementById('logContainer');
+                const elapsed = Date.now() - this.startTime;
+                const timestamp = new Date(elapsed).toISOString().substr(11, 8);
+
+                const entry = document.createElement('div');
+                entry.className = `log-entry log-${type}`;
+                entry.innerHTML = `<span class="log-time">[${timestamp}]</span>${message}`;
+
+                container.appendChild(entry);
+                container.scrollTop = container.scrollHeight;
+
+                console.log(`[${type.toUpperCase()}] ${message}`);
+            }
+
+            setupEventListeners() {
+                document.getElementById('runAllBtn').addEventListener('click', () => this.runAllTests());
+                document.getElementById('timingBtn').addEventListener('click', () => this.runTimingTest());
+                document.getElementById('audioBtn').addEventListener('click', () => this.runAudioTest());
+                document.getElementById('performanceBtn').addEventListener('click', () => this.runPerformanceTest());
+                document.getElementById('exportBtn').addEventListener('click', () => this.exportReport());
+            }
+        }
+
+        // Initialize test suite
+        window.testSuite = new BrowserCompatibilityTest();
+    </script>
+</body>
+</html>

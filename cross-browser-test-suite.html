@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cross-Browser Testing Suite - Drum Machine</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .browser-info {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .browser-info h2 {
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .info-item {
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #a0d8ff;
+            font-size: 0.9em;
+        }
+
+        .test-section {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .test-section h2 {
+            margin-bottom: 15px;
+            color: #ffd700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .status-idle {
+            background: #666;
+        }
+
+        .status-running {
+            background: #ff9800;
+            animation: pulse 1s infinite;
+        }
+
+        .status-pass {
+            background: #4caf50;
+        }
+
+        .status-fail {
+            background: #f44336;
+        }
+
+        .status-warning {
+            background: #ff9800;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #2196f3;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .metric-card {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4caf50;
+        }
+
+        .metric-card.warning {
+            border-left-color: #ff9800;
+        }
+
+        .metric-card.error {
+            border-left-color: #f44336;
+        }
+
+        .metric-label {
+            font-size: 0.9em;
+            color: #a0d8ff;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .metric-unit {
+            font-size: 0.5em;
+            color: #ccc;
+            margin-left: 5px;
+        }
+
+        .metric-detail {
+            font-size: 0.8em;
+            color: #ccc;
+            margin-top: 5px;
+        }
+
+        .test-log {
+            background: rgba(0,0,0,0.4);
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-timestamp {
+            color: #888;
+            margin-right: 10px;
+        }
+
+        .log-pass {
+            color: #4caf50;
+        }
+
+        .log-fail {
+            color: #f44336;
+        }
+
+        .log-info {
+            color: #2196f3;
+        }
+
+        .log-warning {
+            color: #ff9800;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .visual-test-area {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .step-indicator {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            margin: 5px;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.2);
+            transition: all 0.1s;
+        }
+
+        .step-indicator.active {
+            background: #4caf50;
+            transform: scale(1.2);
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.6);
+        }
+
+        .audio-visualizer {
+            width: 100%;
+            height: 100px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(33, 150, 243, 0.2));
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .summary-item {
+            text-align: center;
+        }
+
+        .summary-value {
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+
+        .summary-label {
+            font-size: 0.9em;
+            color: #a0d8ff;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .test-controls {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Cross-Browser Testing Suite</h1>
+        <p style="text-align: center; margin-bottom: 20px; opacity: 0.9;">
+            Comprehensive testing for timing accuracy, audio quality, and UI responsiveness
+        </p>
+
+        <!-- Browser Information -->
+        <div class="browser-info">
+            <h2>🌐 Browser Environment</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Browser</div>
+                    <div id="browser-name">Detecting...</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Version</div>
+                    <div id="browser-version">Detecting...</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Platform</div>
+                    <div id="platform">Detecting...</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Web Audio Support</div>
+                    <div id="audio-support">Checking...</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Sample Rate</div>
+                    <div id="sample-rate">N/A</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Screen Resolution</div>
+                    <div id="screen-res">Detecting...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Controls -->
+        <div class="test-controls">
+            <button class="btn btn-primary" id="runAllBtn">▶ Run All Tests</button>
+            <button class="btn btn-secondary" id="timingTestBtn">⏱️ Timing Test</button>
+            <button class="btn btn-secondary" id="audioTestBtn">🔊 Audio Test</button>
+            <button class="btn btn-secondary" id="uiTestBtn">🎨 UI Test</button>
+            <button class="btn btn-danger" id="stopBtn" disabled>⏹️ Stop</button>
+        </div>
+
+        <!-- Overall Progress -->
+        <div class="progress-bar">
+            <div class="progress-fill" id="overallProgress" style="width: 0%">0%</div>
+        </div>
+
+        <!-- Test 1: Timing Accuracy -->
+        <div class="test-section">
+            <h2>
+                ⏱️ Timing Accuracy Test
+                <span class="status-badge status-idle" id="timing-status">IDLE</span>
+            </h2>
+            <p style="margin-bottom: 15px; opacity: 0.9;">
+                Tests AudioContext scheduling precision, step timing consistency, and drift over time
+            </p>
+            
+            <div class="metrics-grid">
+                <div class="metric-card" id="timing-precision-card">
+                    <div class="metric-label">Average Timing Error</div>
+                    <div class="metric-value" id="avg-timing-error">
+                        --<span class="metric-unit">ms</span>
+                    </div>
+                    <div class="metric-detail">Target: &lt;1ms</div>
+                </div>
+                <div class="metric-card" id="timing-jitter-card">
+                    <div class="metric-label">Timing Jitter (StdDev)</div>
+                    <div class="metric-value" id="timing-jitter">
+                        --<span class="metric-unit">ms</span>
+                    </div>
+                    <div class="metric-detail">Target: &lt;0.5ms</div>
+                </div>
+                <div class="metric-card" id="drift-card">
+                    <div class="metric-label">Cumulative Drift</div>
+                    <div class="metric-value" id="cumulative-drift">
+                        --<span class="metric-unit">ms</span>
+                    </div>
+                    <div class="metric-detail">Target: &lt;5ms over 60s</div>
+                </div>
+                <div class="metric-card" id="steps-card">
+                    <div class="metric-label">Steps Completed</div>
+                    <div class="metric-value" id="steps-completed">
+                        --<span class="metric-unit">/ 480</span>
+                    </div>
+                    <div class="metric-detail">60s @ 120 BPM</div>
+                </div>
+            </div>
+
+            <div class="visual-test-area">
+                <strong>Step Progression (16 steps):</strong>
+                <div id="timing-steps"></div>
+            </div>
+        </div>
+
+        <!-- Test 2: Audio Quality -->
+        <div class="test-section">
+            <h2>
+                🔊 Audio Quality Test
+                <span class="status-badge status-idle" id="audio-status">IDLE</span>
+            </h2>
+            <p style="margin-bottom: 15px; opacity: 0.9;">
+                Tests sound generation quality, latency, and consistency across different sounds
+            </p>
+            
+            <div class="metrics-grid">
+                <div class="metric-card" id="audio-latency-card">
+                    <div class="metric-label">Audio Latency</div>
+                    <div class="metric-value" id="audio-latency">
+                        --<span class="metric-unit">ms</span>
+                    </div>
+                    <div class="metric-detail">Target: &lt;50ms</div>
+                </div>
+                <div class="metric-card" id="buffer-card">
+                    <div class="metric-label">Buffer Underruns</div>
+                    <div class="metric-value" id="buffer-underruns">
+                        --<span class="metric-unit">events</span>
+                    </div>
+                    <div class="metric-detail">Target: 0</div>
+                </div>
+                <div class="metric-card" id="sounds-card">
+                    <div class="metric-label">Sounds Triggered</div>
+                    <div class="metric-value" id="sounds-triggered">
+                        --<span class="metric-unit">total</span>
+                    </div>
+                    <div class="metric-detail">All drum types</div>
+                </div>
+                <div class="metric-card" id="quality-card">
+                    <div class="metric-label">Quality Score</div>
+                    <div class="metric-value" id="quality-score">
+                        --<span class="metric-unit">/ 100</span>
+                    </div>
+                    <div class="metric-detail">Composite metric</div>
+                </div>
+            </div>
+
+            <canvas class="audio-visualizer" id="audioVisualizer"></canvas>
+        </div>
+
+        <!-- Test 3: UI Responsiveness -->
+        <div class="test-section">
+            <h2>
+                🎨 UI Responsiveness Test
+                <span class="status-badge status-idle" id="ui-status">IDLE</span>
+            </h2>
+            <p style="margin-bottom: 15px; opacity: 0.9;">
+                Tests frame rate, visual sync accuracy, and UI interaction latency
+            </p>
+            
+            <div class="metrics-grid">
+                <div class="metric-card" id="fps-card">
+                    <div class="metric-label">Frame Rate</div>
+                    <div class="metric-value" id="frame-rate">
+                        --<span class="metric-unit">fps</span>
+                    </div>
+                    <div class="metric-detail">Target: 60fps</div>
+                </div>
+                <div class="metric-card" id="visual-lag-card">
+                    <div class="metric-label">Visual Sync Lag</div>
+                    <div class="metric-value" id="visual-lag">
+                        --<span class="metric-unit">ms</span>
+                    </div>
+                    <div class="metric-detail">Target: &lt;50ms</div>
+                </div>
+                <div class="metric-card" id="dropped-frames-card">
+                    <div class="metric-label">Dropped Frames</div>
+                    <div class="metric-value" id="dropped-frames">
+                        --<span class="metric-unit">frames</span>
+                    </div>
+                    <div class="metric-detail">Target: &lt;5%</div>
+                </div>
+                <div class="metric-card" id="interaction-card">
+                    <div class="metric-label">Interaction Latency</div>
+                    <div class="metric-value" id="interaction-latency">
+                        --<span class="metric-unit">ms</span>
+                    </div>
+                    <div class="metric-detail">Target: &lt;100ms</div>
+                </div>
+            </div>
+
+            <div class="visual-test-area">
+                <strong>Visual Sync Test (should highlight in rhythm):</strong>
+                <div id="ui-steps"></div>
+            </div>
+        </div>
+
+        <!-- Test Summary -->
+        <div class="test-section summary-card">
+            <h2>📊 Test Summary</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-value" id="tests-passed" style="color: #4caf50;">0</div>
+                    <div class="summary-label">Tests Passed</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="tests-failed" style="color: #f44336;">0</div>
+                    <div class="summary-label">Tests Failed</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="tests-warning" style="color: #ff9800;">0</div>
+                    <div class="summary-label">Warnings</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="overall-score">--</div>
+                    <div class="summary-label">Overall Score</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Log -->
+        <div class="test-section">
+            <h2>📝 Test Log</h2>
+            <div class="test-log" id="testLog">
+                <div class="log-entry log-info">
+                    <span class="log-timestamp">[00:00:00]</span>
+                    Test suite initialized. Click "Run All Tests" to begin.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===================================
+        // Browser Detection
+        // ===================================
+        function detectBrowser() {
+            const ua = navigator.userAgent;
+            let browserName = 'Unknown';
+            let browserVersion = 'Unknown';
+
+            if (ua.indexOf('Chrome') > -1 && ua.indexOf('Edg') === -1) {
+                browserName = 'Chrome';
+                browserVersion = ua.match(/Chrome\/(\d+)/)?.[1] || 'Unknown';
+            } else if (ua.indexOf('Edg') > -1) {
+                browserName = 'Edge';
+                browserVersion = ua.match(/Edg\/(\d+)/)?.[1] || 'Unknown';
+            } else if (ua.indexOf('Firefox') > -1) {
+                browserName = 'Firefox';
+                browserVersion = ua.match(/Firefox\/(\d+)/)?.[1] || 'Unknown';
+            } else if (ua.indexOf('Safari') > -1 && ua.indexOf('Chrome') === -1) {
+                browserName = 'Safari';
+                browserVersion = ua.match(/Version\/(\d+)/)?.[1] || 'Unknown';
+            }
+
+            document.getElementById('browser-name').textContent = browserName;
+            document.getElementById('browser-version').textContent = browserVersion;
+            document.getElementById('platform').textContent = navigator.platform;
+            document.getElementById('screen-res').textContent = 
+                `${window.screen.width}×${window.screen.height}`;
+
+            return { browserName, browserVersion };
+        }
+
+        // ===================================
+        // Audio Context Setup
+        // ===================================
+        let audioContext = null;
+        let masterGain = null;
+
+        function initAudioContext() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = audioContext.createGain();
+                masterGain.gain.value = 0.3; // Lower volume for testing
+                masterGain.connect(audioContext.destination);
+
+                document.getElementById('audio-support').textContent = '✅ Supported';
+                document.getElementById('audio-support').style.color = '#4caf50';
+                document.getElementById('sample-rate').textContent = 
+                    `${audioContext.sampleRate} Hz`;
+
+                log('Audio context initialized successfully', 'info');
+                return true;
+            } catch (error) {
+                document.getElementById('audio-support').textContent = '❌ Not Supported';
+                document.getElementById('audio-support').style.color = '#f44336';
+                log(`Audio context initialization failed: ${error.message}`, 'fail');
+                return false;
+            }
+        }
+
+        // ===================================
+        // Drum Sound Generators
+        // ===================================
+        function playKick(time) {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.frequency.setValueAtTime(150, time);
+            osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.5);
+            
+            gain.gain.setValueAtTime(1, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.5);
+            
+            osc.connect(gain);
+            gain.connect(masterGain);
+            
+            osc.start(time);
+            osc.stop(time + 0.5);
+        }
+
+        function playSnare(time) {
+            const noise = audioContext.createBufferSource();
+            const buffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.2, audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            noise.buffer = buffer;
+            
+            const noiseGain = audioContext.createGain();
+            noiseGain.gain.setValueAtTime(0.3, time);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+            
+            const osc = audioContext.createOscillator();
+            osc.frequency.value = 100;
+            const oscGain = audioContext.createGain();
+            oscGain.gain.setValueAtTime(0.3, time);
+            oscGain.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
+            
+            noise.connect(noiseGain);
+            noiseGain.connect(masterGain);
+            osc.connect(oscGain);
+            oscGain.connect(masterGain);
+            
+            noise.start(time);
+            osc.start(time);
+            osc.stop(time + 0.1);
+        }
+
+        function playHiHat(time) {
+            const noise = audioContext.createBufferSource();
+            const buffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.05, audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            noise.buffer = buffer;
+            
+            const filter = audioContext.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.value = 7000;
+            
+            const gain = audioContext.createGain();
+            gain.gain.setValueAtTime(0.3, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05);
+            
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+            
+            noise.start(time);
+        }
+
+        function playBass(time) {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.frequency.setValueAtTime(55, time);
+            
+            gain.gain.setValueAtTime(0.4, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
+            
+            osc.connect(gain);
+            gain.connect(masterGain);
+            
+            osc.start(time);
+            osc.stop(time + 0.3);
+        }
+
+        // ===================================
+        // Logging System
+        // ===================================
+        let logStartTime = Date.now();
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('testLog');
+            const elapsed = Date.now() - logStartTime;
+            const timestamp = new Date(elapsed).toISOString().substr(11, 8);
+            
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `<span class="log-timestamp">[${timestamp}]</span>${message}`;
+            
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // ===================================
+        // Test State
+        // ===================================
+        let testState = {
+            running: false,
+            currentTest: null,
+            startTime: 0,
+            timingData: [],
+            audioData: [],
+            frameData: [],
+            results: {
+                timing: null,
+                audio: null,
+                ui: null
+            }
+        };
+
+        // ===================================
+        // Test 1: Timing Accuracy
+        // ===================================
+        async function runTimingTest() {
+            if (!audioContext) {
+                log('Audio context not initialized', 'fail');
+                return false;
+            }
+
+            log('Starting timing accuracy test...', 'info');
+            updateStatus('timing', 'running');
+
+            // Create step indicators
+            const stepsDiv = document.getElementById('timing-steps');
+            stepsDiv.innerHTML = '';
+            for (let i = 0; i < 16; i++) {
+                const step = document.createElement('div');
+                step.className = 'step-indicator';
+                step.id = `timing-step-${i}`;
+                stepsDiv.appendChild(step);
+            }
+
+            const bpm = 120;
+            const stepDuration = 60 / bpm / 4; // 16th notes
+            const testDuration = 60; // 60 seconds
+            const expectedSteps = Math.floor(testDuration / stepDuration);
+
+            testState.timingData = [];
+            let currentStep = 0;
+            let scheduleAheadTime = 0.1;
+            let nextNoteTime = audioContext.currentTime;
+            let testStartTime = audioContext.currentTime;
+
+            function scheduleNote(time, stepIndex) {
+                // Record timing
+                testState.timingData.push({
+                    scheduled: time,
+                    actual: null,
+                    step: stepIndex
+                });
+
+                // Play sound
+                if (stepIndex % 4 === 0) {
+                    playKick(time);
+                } else if (stepIndex % 8 === 2) {
+                    playSnare(time);
+                }
+                playHiHat(time);
+
+                // Update visual
+                setTimeout(() => {
+                    const visualStep = stepIndex % 16;
+                    document.querySelectorAll('.step-indicator').forEach(s => 
+                        s.classList.remove('active'));
+                    document.getElementById(`timing-step-${visualStep}`)?.classList.add('active');
+
+                    // Record actual time
+                    const dataPoint = testState.timingData.find(d => d.step === stepIndex);
+                    if (dataPoint) {
+                        dataPoint.actual = audioContext.currentTime;
+                    }
+
+                    // Update metrics
+                    document.getElementById('steps-completed').innerHTML = 
+                        `${stepIndex}<span class="metric-unit">/ ${expectedSteps}</span>`;
+                }, (time - audioContext.currentTime) * 1000);
+            }
+
+            function scheduler() {
+                while (nextNoteTime < audioContext.currentTime + scheduleAheadTime && currentStep < expectedSteps) {
+                    scheduleNote(nextNoteTime, currentStep);
+                    nextNoteTime += stepDuration;
+                    currentStep++;
+                }
+
+                if (currentStep < expectedSteps && testState.running) {
+                    setTimeout(scheduler, 25);
+                } else if (currentStep >= expectedSteps) {
+                    setTimeout(() => analyzeTimingResults(testStartTime, expectedSteps, stepDuration), 1000);
+                }
+            }
+
+            scheduler();
+            return true;
+        }
+
+        function analyzeTimingResults(startTime, expectedSteps, stepDuration) {
+            log('Analyzing timing results...', 'info');
+
+            // Calculate timing errors
+            const errors = testState.timingData
+                .filter(d => d.actual !== null)
+                .map(d => {
+                    const expectedTime = startTime + (d.step * stepDuration);
+                    return Math.abs(d.actual - expectedTime) * 1000; // Convert to ms
+                });
+
+            if (errors.length === 0) {
+                log('No timing data collected', 'fail');
+                updateStatus('timing', 'fail');
+                return;
+            }
+
+            const avgError = errors.reduce((a, b) => a + b, 0) / errors.length;
+            const variance = errors.reduce((sum, err) => sum + Math.pow(err - avgError, 2), 0) / errors.length;
+            const jitter = Math.sqrt(variance);
+
+            // Calculate drift
+            const lastData = testState.timingData[testState.timingData.length - 1];
+            const expectedEndTime = startTime + (expectedSteps * stepDuration);
+            const drift = Math.abs(lastData.scheduled - expectedEndTime) * 1000;
+
+            // Update UI
+            document.getElementById('avg-timing-error').innerHTML = 
+                `${avgError.toFixed(3)}<span class="metric-unit">ms</span>`;
+            document.getElementById('timing-jitter').innerHTML = 
+                `${jitter.toFixed(3)}<span class="metric-unit">ms</span>`;
+            document.getElementById('cumulative-drift').innerHTML = 
+                `${drift.toFixed(3)}<span class="metric-unit">ms</span>`;
+
+            // Determine pass/fail
+            const passed = avgError < 1 && jitter < 0.5 && drift < 5;
+            
+            if (avgError >= 1) {
+                document.getElementById('timing-precision-card').classList.add('error');
+            } else if (avgError >= 0.5) {
+                document.getElementById('timing-precision-card').classList.add('warning');
+            }
+
+            if (jitter >= 0.5) {
+                document.getElementById('timing-jitter-card').classList.add('error');
+            } else if (jitter >= 0.3) {
+                document.getElementById('timing-jitter-card').classList.add('warning');
+            }
+
+            if (drift >= 5) {
+                document.getElementById('drift-card').classList.add('error');
+            } else if (drift >= 2) {
+                document.getElementById('drift-card').classList.add('warning');
+            }
+
+            testState.results.timing = { passed, avgError, jitter, drift };
+            updateStatus('timing', passed ? 'pass' : 'fail');
+
+            log(`Timing test complete: Avg Error=${avgError.toFixed(3)}ms, Jitter=${jitter.toFixed(3)}ms, Drift=${drift.toFixed(3)}ms`, 
+                passed ? 'pass' : 'fail');
+
+            updateSummary();
+        }
+
+        // ===================================
+        // Test 2: Audio Quality
+        // ===================================
+        async function runAudioTest() {
+            if (!audioContext) {
+                log('Audio context not initialized', 'fail');
+                return false;
+            }
+
+            log('Starting audio quality test...', 'info');
+            updateStatus('audio', 'running');
+
+            const canvas = document.getElementById('audioVisualizer');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            // Create analyzer
+            const analyzer = audioContext.createAnalyser();
+            analyzer.fftSize = 2048;
+            masterGain.connect(analyzer);
+
+            const bufferLength = analyzer.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            let soundsTriggered = 0;
+            let bufferUnderruns = 0;
+            let lastLevel = 0;
+
+            // Visualizer
+            function draw() {
+                if (!testState.running || testState.currentTest !== 'audio') return;
+
+                requestAnimationFrame(draw);
+
+                analyzer.getByteTimeDomainData(dataArray);
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#4caf50';
+                ctx.beginPath();
+
+                const sliceWidth = canvas.width / bufferLength;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const v = dataArray[i] / 128.0;
+                    const y = v * canvas.height / 2;
+
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+
+                    x += sliceWidth;
+                }
+
+                ctx.lineTo(canvas.width, canvas.height / 2);
+                ctx.stroke();
+
+                // Check for buffer underruns (silence when sound should be playing)
+                const currentLevel = dataArray.reduce((a, b) => a + Math.abs(b - 128), 0);
+                if (soundsTriggered > 10 && currentLevel < 100 && lastLevel < 100) {
+                    bufferUnderruns++;
+                }
+                lastLevel = currentLevel;
+            }
+
+            draw();
+
+            // Test all drum sounds
+            const testPattern = [
+                { time: 0, sound: 'kick' },
+                { time: 0.25, sound: 'snare' },
+                { time: 0.5, sound: 'hihat' },
+                { time: 0.75, sound: 'bass' },
+                { time: 1.0, sound: 'kick' },
+                { time: 1.25, sound: 'hihat' },
+                { time: 1.5, sound: 'snare' },
+                { time: 1.75, sound: 'hihat' }
+            ];
+
+            const startTime = audioContext.currentTime + 0.1;
+            const iterations = 30; // 30 iterations = ~60 seconds
+
+            for (let i = 0; i < iterations; i++) {
+                testPattern.forEach(({ time, sound }) => {
+                    const scheduleTime = startTime + (i * 2) + time;
+                    switch (sound) {
+                        case 'kick': playKick(scheduleTime); break;
+                        case 'snare': playSnare(scheduleTime); break;
+                        case 'hihat': playHiHat(scheduleTime); break;
+                        case 'bass': playBass(scheduleTime); break;
+                    }
+                    soundsTriggered++;
+                });
+            }
+
+            // Update metrics
+            const updateInterval = setInterval(() => {
+                if (!testState.running || testState.currentTest !== 'audio') {
+                    clearInterval(updateInterval);
+                    return;
+                }
+
+                document.getElementById('sounds-triggered').innerHTML = 
+                    `${soundsTriggered}<span class="metric-unit">total</span>`;
+                document.getElementById('buffer-underruns').innerHTML = 
+                    `${bufferUnderruns}<span class="metric-unit">events</span>`;
+            }, 100);
+
+            // Finish after all sounds played
+            setTimeout(() => {
+                analyzeAudioResults(soundsTriggered, bufferUnderruns);
+            }, iterations * 2000 + 1000);
+
+            return true;
+        }
+
+        function analyzeAudioResults(soundsTriggered, bufferUnderruns) {
+            log('Analyzing audio quality results...', 'info');
+
+            // Estimate latency (baseLatency + outputLatency)
+            const latency = ((audioContext.baseLatency || 0) + (audioContext.outputLatency || 0)) * 1000;
+            
+            document.getElementById('audio-latency').innerHTML = 
+                `${latency.toFixed(1)}<span class="metric-unit">ms</span>`;
+
+            // Calculate quality score
+            let qualityScore = 100;
+            if (latency > 50) qualityScore -= 20;
+            else if (latency > 30) qualityScore -= 10;
+            
+            if (bufferUnderruns > 0) qualityScore -= (bufferUnderruns * 5);
+            
+            qualityScore = Math.max(0, qualityScore);
+
+            document.getElementById('quality-score').innerHTML = 
+                `${qualityScore}<span class="metric-unit">/ 100</span>`;
+
+            // Update card styles
+            if (latency >= 50) {
+                document.getElementById('audio-latency-card').classList.add('error');
+            } else if (latency >= 30) {
+                document.getElementById('audio-latency-card').classList.add('warning');
+            }
+
+            if (bufferUnderruns > 0) {
+                document.getElementById('buffer-card').classList.add('error');
+            }
+
+            if (qualityScore < 70) {
+                document.getElementById('quality-card').classList.add('error');
+            } else if (qualityScore < 85) {
+                document.getElementById('quality-card').classList.add('warning');
+            }
+
+            const passed = latency < 50 && bufferUnderruns === 0 && qualityScore >= 70;
+            testState.results.audio = { passed, latency, bufferUnderruns, qualityScore };
+            updateStatus('audio', passed ? 'pass' : 'fail');
+
+            log(`Audio test complete: Latency=${latency.toFixed(1)}ms, Underruns=${bufferUnderruns}, Score=${qualityScore}`, 
+                passed ? 'pass' : 'fail');
+
+            updateSummary();
+        }
+
+        // ===================================
+        // Test 3: UI Responsiveness
+        // ===================================
+        async function runUITest() {
+            log('Starting UI responsiveness test...', 'info');
+            updateStatus('ui', 'running');
+
+            // Create step indicators
+            const stepsDiv = document.getElementById('ui-steps');
+            stepsDiv.innerHTML = '';
+            for (let i = 0; i < 16; i++) {
+                const step = document.createElement('div');
+                step.className = 'step-indicator';
+                step.id = `ui-step-${i}`;
+                stepsDiv.appendChild(step);
+            }
+
+            let frameCount = 0;
+            let droppedFrames = 0;
+            let lastFrameTime = performance.now();
+            let frameTimes = [];
+            let visualLags = [];
+
+            const testDuration = 10000; // 10 seconds
+            const startTime = performance.now();
+            let currentStep = 0;
+
+            function animate(currentTime) {
+                if (!testState.running || testState.currentTest !== 'ui') return;
+
+                frameCount++;
+
+                // Calculate frame time
+                const frameTime = currentTime - lastFrameTime;
+                frameTimes.push(frameTime);
+
+                // Detect dropped frames (>20ms = dropped frame at 60fps)
+                if (frameTime > 20) {
+                    droppedFrames++;
+                }
+
+                lastFrameTime = currentTime;
+
+                // Update step indicator (simulating audio sync)
+                const elapsed = currentTime - startTime;
+                const expectedStep = Math.floor((elapsed / 1000) * 8) % 16; // 8 steps per second
+
+                if (expectedStep !== currentStep) {
+                    const visualUpdateTime = performance.now();
+                    const expectedUpdateTime = startTime + (expectedStep * 125); // 125ms per step
+                    const lag = visualUpdateTime - expectedUpdateTime;
+                    visualLags.push(Math.abs(lag));
+
+                    document.querySelectorAll('#ui-steps .step-indicator').forEach(s => 
+                        s.classList.remove('active'));
+                    document.getElementById(`ui-step-${expectedStep}`)?.classList.add('active');
+
+                    currentStep = expectedStep;
+                }
+
+                // Calculate FPS
+                const fps = 1000 / (frameTimes.slice(-60).reduce((a, b) => a + b, 0) / Math.min(frameTimes.length, 60));
+                document.getElementById('frame-rate').innerHTML = 
+                    `${fps.toFixed(1)}<span class="metric-unit">fps</span>`;
+
+                document.getElementById('dropped-frames').innerHTML = 
+                    `${droppedFrames}<span class="metric-unit">frames</span>`;
+
+                if (visualLags.length > 0) {
+                    const avgLag = visualLags.reduce((a, b) => a + b, 0) / visualLags.length;
+                    document.getElementById('visual-lag').innerHTML = 
+                        `${avgLag.toFixed(1)}<span class="metric-unit">ms</span>`;
+                }
+
+                if (elapsed < testDuration) {
+                    requestAnimationFrame(animate);
+                } else {
+                    analyzeUIResults(frameCount, droppedFrames, frameTimes, visualLags);
+                }
+            }
+
+            // Test interaction latency
+            const testButton = document.createElement('button');
+            testButton.textContent = 'Click Me';
+            testButton.style.cssText = 'margin: 10px; padding: 10px 20px; font-size: 1em;';
+            stepsDiv.appendChild(testButton);
+
+            let clickLatencies = [];
+            testButton.addEventListener('click', () => {
+                const clickTime = performance.now();
+                setTimeout(() => {
+                    const responseTime = performance.now();
+                    clickLatencies.push(responseTime - clickTime);
+                    
+                    if (clickLatencies.length > 0) {
+                        const avgLatency = clickLatencies.reduce((a, b) => a + b, 0) / clickLatencies.length;
+                        document.getElementById('interaction-latency').innerHTML = 
+                            `${avgLatency.toFixed(1)}<span class="metric-unit">ms</span>`;
+                    }
+                }, 0);
+            });
+
+            requestAnimationFrame(animate);
+            return true;
+        }
+
+        function analyzeUIResults(frameCount, droppedFrames, frameTimes, visualLags) {
+            log('Analyzing UI responsiveness results...', 'info');
+
+            const avgFrameTime = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
+            const fps = 1000 / avgFrameTime;
+            const dropRate = (droppedFrames / frameCount) * 100;
+            const avgVisualLag = visualLags.length > 0 
+                ? visualLags.reduce((a, b) => a + b, 0) / visualLags.length 
+                : 0;
+
+            // Update card styles
+            if (fps < 50) {
+                document.getElementById('fps-card').classList.add('error');
+            } else if (fps < 55) {
+                document.getElementById('fps-card').classList.add('warning');
+            }
+
+            if (avgVisualLag >= 50) {
+                document.getElementById('visual-lag-card').classList.add('error');
+            } else if (avgVisualLag >= 30) {
+                document.getElementById('visual-lag-card').classList.add('warning');
+            }
+
+            if (dropRate >= 5) {
+                document.getElementById('dropped-frames-card').classList.add('error');
+            } else if (dropRate >= 2) {
+                document.getElementById('dropped-frames-card').classList.add('warning');
+            }
+
+            const passed = fps >= 55 && avgVisualLag < 50 && dropRate < 5;
+            testState.results.ui = { passed, fps, avgVisualLag, dropRate };
+            updateStatus('ui', passed ? 'pass' : 'fail');
+
+            log(`UI test complete: FPS=${fps.toFixed(1)}, Visual Lag=${avgVisualLag.toFixed(1)}ms, Drop Rate=${dropRate.toFixed(1)}%`, 
+                passed ? 'pass' : 'fail');
+
+            updateSummary();
+        }
+
+        // ===================================
+        // Helper Functions
+        // ===================================
+        function updateStatus(test, status) {
+            const badge = document.getElementById(`${test}-status`);
+            badge.className = `status-badge status-${status}`;
+            badge.textContent = status.toUpperCase();
+        }
+
+        function updateSummary() {
+            const results = testState.results;
+            let passed = 0;
+            let failed = 0;
+            let warnings = 0;
+
+            Object.values(results).forEach(result => {
+                if (result) {
+                    if (result.passed) passed++;
+                    else failed++;
+                }
+            });
+
+            document.getElementById('tests-passed').textContent = passed;
+            document.getElementById('tests-failed').textContent = failed;
+            document.getElementById('tests-warning').textContent = warnings;
+
+            const total = passed + failed;
+            if (total > 0) {
+                const score = ((passed / total) * 100).toFixed(0);
+                document.getElementById('overall-score').textContent = `${score}%`;
+                document.getElementById('overall-score').style.color = 
+                    score >= 80 ? '#4caf50' : score >= 60 ? '#ff9800' : '#f44336';
+            }
+        }
+
+        function updateProgress(percent) {
+            const progressBar = document.getElementById('overallProgress');
+            progressBar.style.width = `${percent}%`;
+            progressBar.textContent = `${percent}%`;
+        }
+
+        // ===================================
+        // Test Runners
+        // ===================================
+        async function runAllTests() {
+            if (testState.running) return;
+
+            testState.running = true;
+            testState.startTime = Date.now();
+            logStartTime = Date.now();
+
+            document.getElementById('runAllBtn').disabled = true;
+            document.getElementById('timingTestBtn').disabled = true;
+            document.getElementById('audioTestBtn').disabled = true;
+            document.getElementById('uiTestBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+
+            log('=== Starting Full Test Suite ===', 'info');
+            updateProgress(0);
+
+            // Test 1: Timing
+            testState.currentTest = 'timing';
+            await runTimingTest();
+            await new Promise(resolve => setTimeout(resolve, 62000)); // Wait for timing test
+            updateProgress(33);
+
+            if (!testState.running) return;
+
+            // Test 2: Audio
+            testState.currentTest = 'audio';
+            await runAudioTest();
+            await new Promise(resolve => setTimeout(resolve, 62000)); // Wait for audio test
+            updateProgress(66);
+
+            if (!testState.running) return;
+
+            // Test 3: UI
+            testState.currentTest = 'ui';
+            await runUITest();
+            await new Promise(resolve => setTimeout(resolve, 11000)); // Wait for UI test
+            updateProgress(100);
+
+            log('=== Test Suite Complete ===', 'info');
+            stopTests();
+        }
+
+        async function runSingleTest(testName) {
+            if (testState.running) return;
+
+            testState.running = true;
+            testState.currentTest = testName;
+            testState.startTime = Date.now();
+            logStartTime = Date.now();
+
+            document.getElementById('runAllBtn').disabled = true;
+            document.getElementById('timingTestBtn').disabled = true;
+            document.getElementById('audioTestBtn').disabled = true;
+            document.getElementById('uiTestBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+
+            switch (testName) {
+                case 'timing':
+                    await runTimingTest();
+                    setTimeout(stopTests, 62000);
+                    break;
+                case 'audio':
+                    await runAudioTest();
+                    setTimeout(stopTests, 62000);
+                    break;
+                case 'ui':
+                    await runUITest();
+                    setTimeout(stopTests, 11000);
+                    break;
+            }
+        }
+
+        function stopTests() {
+            testState.running = false;
+            testState.currentTest = null;
+
+            document.getElementById('runAllBtn').disabled = false;
+            document.getElementById('timingTestBtn').disabled = false;
+            document.getElementById('audioTestBtn').disabled = false;
+            document.getElementById('uiTestBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+
+            log('Tests stopped', 'info');
+        }
+
+        // ===================================
+        // Event Listeners
+        // ===================================
+        document.getElementById('runAllBtn').addEventListener('click', runAllTests);
+        document.getElementById('timingTestBtn').addEventListener('click', () => runSingleTest('timing'));
+        document.getElementById('audioTestBtn').addEventListener('click', () => runSingleTest('audio'));
+        document.getElementById('uiTestBtn').addEventListener('click', () => runSingleTest('ui'));
+        document.getElementById('stopBtn').addEventListener('click', stopTests);
+
+        // ===================================
+        // Initialization
+        // ===================================
+        window.addEventListener('load', () => {
+            detectBrowser();
+            
+            // Initialize audio on user interaction
+            document.body.addEventListener('click', () => {
+                if (!audioContext) {
+                    initAudioContext();
+                }
+            }, { once: true });
+
+            log('Cross-browser test suite ready. Click any button to begin.', 'info');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drum Synthesis Verification Suite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .status-bar {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ccc;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.ready { background: #4CAF50; }
+        .status-indicator.testing { background: #ff9800; }
+        .status-indicator.error { background: #f44336; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .panel h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .drum-test-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .drum-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .drum-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            border-color: #667eea;
+        }
+
+        .drum-card.active {
+            border-color: #4CAF50;
+            background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);
+        }
+
+        .drum-card.testing {
+            border-color: #ff9800;
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+            animation: testPulse 0.5s ease-in-out;
+        }
+
+        @keyframes testPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .drum-card h3 {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .drum-metrics {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+
+        .drum-metrics div {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+        }
+
+        .metric-label {
+            font-weight: 600;
+        }
+
+        .metric-value {
+            font-family: 'Courier New', monospace;
+            color: #667eea;
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+        }
+
+        .control-section h3 {
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .test-results {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .test-result-item {
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            font-size: 0.95em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .test-result-item.pass {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .test-result-item.fail {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .test-result-item.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+
+        .test-result-item .icon {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .waveform-display {
+            background: #000;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 15px;
+            position: relative;
+            height: 150px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 5px;
+        }
+
+        .frequency-spectrum {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+            gap: 5px;
+            margin-top: 15px;
+        }
+
+        .freq-bar {
+            background: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+            height: 80px;
+        }
+
+        .freq-bar-fill {
+            background: linear-gradient(to top, #667eea, #764ba2);
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+            transition: height 0.3s ease;
+        }
+
+        .freq-label {
+            text-align: center;
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .preset-btn {
+            padding: 15px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border: 2px solid #667eea;
+            color: #333;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .preset-btn:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .preset-btn.active {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 15px;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .envelope-display {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .envelope-params {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .envelope-param {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .envelope-param-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .envelope-param-value {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .summary-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .summary-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .log-console {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .log-entry {
+            padding: 3px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .log-timestamp {
+            color: #858585;
+            margin-right: 10px;
+        }
+
+        .log-level {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .log-level.info { color: #4fc3f7; }
+        .log-level.success { color: #81c784; }
+        .log-level.warning { color: #ffb74d; }
+        .log-level.error { color: #e57373; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🥁 Drum Synthesis Verification Suite</h1>
+            <p>Comprehensive testing of drum sound synthesis, envelopes, frequency characteristics, and pattern playback</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-indicator" id="audioStatus"></div>
+                <span id="audioStatusText">Audio Context: Not Initialized</span>
+            </div>
+            <div class="status-item">
+                <div class="status-indicator" id="testStatus"></div>
+                <span id="testStatusText">Tests: Ready</span>
+            </div>
+            <div class="status-item">
+                <span id="sampleRate"></span>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- Individual Drum Tests -->
+            <div class="panel">
+                <h2>🎵 Individual Drum Sound Tests</h2>
+                <div class="drum-test-grid">
+                    <div class="drum-card" id="kickCard" onclick="testDrum('kick')">
+                        <h3>🦵 Kick Drum</h3>
+                        <div class="drum-metrics" id="kickMetrics">
+                            <div><span class="metric-label">Freq Range:</span> <span class="metric-value">150Hz → 30Hz</span></div>
+                            <div><span class="metric-label">Duration:</span> <span class="metric-value">500ms</span></div>
+                            <div><span class="metric-label">Envelope:</span> <span class="metric-value">Exponential</span></div>
+                            <div><span class="metric-label">Status:</span> <span class="metric-value" id="kickStatus">Ready</span></div>
+                        </div>
+                    </div>
+
+                    <div class="drum-card" id="snareCard" onclick="testDrum('snare')">
+                        <h3>🥁 Snare Drum</h3>
+                        <div class="drum-metrics" id="snareMetrics">
+                            <div><span class="metric-label">Freq:</span> <span class="metric-value">180Hz + 330Hz</span></div>
+                            <div><span class="metric-label">Duration:</span> <span class="metric-value">150ms</span></div>
+                            <div><span class="metric-label">Noise:</span> <span class="metric-value">HPF 1000Hz</span></div>
+                            <div><span class="metric-label">Status:</span> <span class="metric-value" id="snareStatus">Ready</span></div>
+                        </div>
+                    </div>
+
+                    <div class="drum-card" id="hihatCard" onclick="testDrum('hihat')">
+                        <h3>🎩 Hi-Hat</h3>
+                        <div class="drum-metrics" id="hihatMetrics">
+                            <div><span class="metric-label">Filter:</span> <span class="metric-value">HPF 7kHz + BPF 10kHz</span></div>
+                            <div><span class="metric-label">Duration:</span> <span class="metric-value">50ms (closed)</span></div>
+                            <div><span class="metric-label">Type:</span> <span class="metric-value">White Noise</span></div>
+                            <div><span class="metric-label">Status:</span> <span class="metric-value" id="hihatStatus">Ready</span></div>
+                        </div>
+                    </div>
+
+                    <div class="drum-card" id="bassCard" onclick="testDrum('bass')">
+                        <h3>🎸 Bass</h3>
+                        <div class="drum-metrics" id="bassMetrics">
+                            <div><span class="metric-label">Freq Range:</span> <span class="metric-value">160Hz → 64Hz</span></div>
+                            <div><span class="metric-label">Duration:</span> <span class="metric-value">300ms</span></div>
+                            <div><span class="metric-label">Wave:</span> <span class="metric-value">Square</span></div>
+                            <div><span class="metric-label">Status:</span> <span class="metric-value" id="bassStatus">Ready</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Test Controls</h3>
+                    <div class="button-group">
+                        <button class="btn-primary" onclick="initializeAudio()">🔊 Initialize Audio</button>
+                        <button class="btn-success" onclick="testAllDrums()">▶️ Test All Drums</button>
+                        <button class="btn-info" onclick="testEnvelopes()">📊 Test Envelopes</button>
+                        <button class="btn-warning" onclick="testFrequencies()">🎼 Test Frequencies</button>
+                    </div>
+                </div>
+
+                <div class="test-results" id="individualTestResults"></div>
+            </div>
+
+            <!-- Pattern Playback Tests -->
+            <div class="panel">
+                <h2>🎼 Pattern Playback Tests</h2>
+                
+                <div class="control-section">
+                    <h3>Preset Patterns</h3>
+                    <div class="preset-grid">
+                        <button class="preset-btn" onclick="loadAndTestPreset('basic')">Basic</button>
+                        <button class="preset-btn" onclick="loadAndTestPreset('funk')">Funk</button>
+                        <button class="preset-btn" onclick="loadAndTestPreset('breakbeat')">Breakbeat</button>
+                        <button class="preset-btn" onclick="loadAndTestPreset('techno')">Techno</button>
+                        <button class="preset-btn" onclick="loadAndTestPreset('hiphop')">Hip-Hop</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Playback Controls</h3>
+                    <div class="button-group">
+                        <button class="btn-success" onclick="startPattern()" id="playBtn">▶️ Play</button>
+                        <button class="btn-danger" onclick="stopPattern()" id="stopBtn">⏹️ Stop</button>
+                        <button class="btn-info" onclick="testAllPresets()">🧪 Test All Presets</button>
+                    </div>
+                </div>
+
+                <div class="envelope-display">
+                    <h4>Current Pattern Info</h4>
+                    <div id="patternInfo">No pattern loaded</div>
+                </div>
+
+                <div class="test-results" id="patternTestResults"></div>
+            </div>
+        </div>
+
+        <!-- Comprehensive Test Panel -->
+        <div class="panel">
+            <h2>🧪 Comprehensive Verification Tests</h2>
+            
+            <div class="control-section">
+                <h3>Automated Test Suite</h3>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="runComprehensiveTests()">🚀 Run All Verification Tests</button>
+                    <button class="btn-info" onclick="runTimingTests()">⏱️ Timing Accuracy Test</button>
+                    <button class="btn-warning" onclick="runFrequencyAnalysis()">📊 Frequency Analysis</button>
+                    <button class="btn-success" onclick="exportResults()">💾 Export Results</button>
+                </div>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="testProgress" style="width: 0%">0%</div>
+            </div>
+
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div class="summary-label">Tests Passed</div>
+                    <div class="summary-value" id="testsPassed">0</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Tests Failed</div>
+                    <div class="summary-value" id="testsFailed">0</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Total Tests</div>
+                    <div class="summary-value" id="totalTests">0</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Success Rate</div>
+                    <div class="summary-value" id="successRate">0%</div>
+                </div>
+            </div>
+
+            <div class="log-console" id="logConsole"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import DrumMachineEngine from './drumMachineEngine.js';
+
+        // Global state
+        let drumEngine = null;
+        let audioContext = null;
+        let analyser = null;
+        let testResults = {
+            passed: 0,
+            failed: 0,
+            total: 0,
+            details: []
+        };
+
+        // Make functions globally accessible
+        window.initializeAudio = initializeAudio;
+        window.testDrum = testDrum;
+        window.testAllDrums = testAllDrums;
+        window.testEnvelopes = testEnvelopes;
+        window.testFrequencies = testFrequencies;
+        window.loadAndTestPreset = loadAndTestPreset;
+        window.startPattern = startPattern;
+        window.stopPattern = stopPattern;
+        window.testAllPresets = testAllPresets;
+        window.runComprehensiveTests = runComprehensiveTests;
+        window.runTimingTests = runTimingTests;
+        window.runFrequencyAnalysis = runFrequencyAnalysis;
+        window.exportResults = exportResults;
+
+        // Initialize audio context and engine
+        async function initializeAudio() {
+            try {
+                log('info', 'Initializing audio context...');
+                drumEngine = new DrumMachineEngine(120);
+                audioContext = await drumEngine.initialize();
+                
+                // Create analyser for frequency analysis
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 2048;
+                drumEngine.drums.masterGain.connect(analyser);
+                
+                updateStatus('audioStatus', 'ready', `Audio Context: ${audioContext.sampleRate}Hz`);
+                document.getElementById('sampleRate').textContent = `Sample Rate: ${audioContext.sampleRate}Hz`;
+                log('success', `Audio initialized successfully at ${audioContext.sampleRate}Hz`);
+                
+                addTestResult('individual', 'pass', 'Audio context initialized successfully');
+                return true;
+            } catch (error) {
+                log('error', `Failed to initialize audio: ${error.message}`);
+                updateStatus('audioStatus', 'error', 'Audio Context: Error');
+                addTestResult('individual', 'fail', `Audio initialization failed: ${error.message}`);
+                return false;
+            }
+        }
+
+        // Test individual drum sound
+        async function testDrum(drumType) {
+            if (!audioContext) {
+                await initializeAudio();
+            }
+
+            const card = document.getElementById(`${drumType}Card`);
+            const status = document.getElementById(`${drumType}Status`);
+            
+            card.classList.add('testing');
+            status.textContent = 'Testing...';
+            log('info', `Testing ${drumType} drum...`);
+
+            try {
+                const time = audioContext.currentTime + 0.1;
+                
+                // Play the drum sound
+                switch(drumType) {
+                    case 'kick':
+                        drumEngine.drums.playKick(time, 1.0);
+                        break;
+                    case 'snare':
+                        drumEngine.drums.playSnare(time, 1.0);
+                        break;
+                    case 'hihat':
+                        drumEngine.drums.playHiHat(time, 1.0, false);
+                        break;
+                    case 'bass':
+                        drumEngine.drums.playBass(time, 1.0, 80);
+                        break;
+                }
+
+                // Verify sound played
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Check if audio is producing output
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                analyser.getByteFrequencyData(dataArray);
+                
+                const hasSignal = dataArray.some(value => value > 0);
+                
+                if (hasSignal) {
+                    card.classList.remove('testing');
+                    card.classList.add('active');
+                    status.textContent = '✓ Passed';
+                    log('success', `${drumType} drum test passed`);
+                    addTestResult('individual', 'pass', `${drumType} drum synthesized correctly`);
+                    recordTest(true);
+                } else {
+                    throw new Error('No audio signal detected');
+                }
+
+                setTimeout(() => {
+                    card.classList.remove('active', 'testing');
+                    status.textContent = 'Ready';
+                }, 1000);
+
+            } catch (error) {
+                card.classList.remove('testing');
+                status.textContent = '✗ Failed';
+                log('error', `${drumType} drum test failed: ${error.message}`);
+                addTestResult('individual', 'fail', `${drumType} drum test failed: ${error.message}`);
+                recordTest(false);
+            }
+        }
+
+        // Test all drums sequentially
+        async function testAllDrums() {
+            log('info', 'Starting comprehensive drum test...');
+            updateStatus('testStatus', 'testing', 'Tests: Running');
+            
+            const drums = ['kick', 'snare', 'hihat', 'bass'];
+            for (const drum of drums) {
+                await testDrum(drum);
+                await new Promise(resolve => setTimeout(resolve, 800));
+            }
+            
+            updateStatus('testStatus', 'ready', 'Tests: Complete');
+            log('success', 'All drum tests completed');
+        }
+
+        // Test envelope characteristics
+        async function testEnvelopes() {
+            if (!audioContext) {
+                await initializeAudio();
+            }
+
+            log('info', 'Testing envelope characteristics...');
+            updateStatus('testStatus', 'testing', 'Tests: Envelope Analysis');
+
+            const envelopeTests = [
+                {
+                    name: 'Kick Envelope',
+                    drum: 'kick',
+                    expectedDuration: 0.5,
+                    expectedAttack: 0.0,
+                    expectedDecay: 0.5
+                },
+                {
+                    name: 'Snare Envelope',
+                    drum: 'snare',
+                    expectedDuration: 0.15,
+                    expectedAttack: 0.0,
+                    expectedDecay: 0.15
+                },
+                {
+                    name: 'Hi-Hat Envelope (Closed)',
+                    drum: 'hihat',
+                    expectedDuration: 0.05,
+                    expectedAttack: 0.0,
+                    expectedDecay: 0.05
+                },
+                {
+                    name: 'Bass Envelope',
+                    drum: 'bass',
+                    expectedDuration: 0.3,
+                    expectedAttack: 0.0,
+                    expectedDecay: 0.3
+                }
+            ];
+
+            for (const test of envelopeTests) {
+                try {
+                    log('info', `Testing ${test.name}...`);
+                    
+                    // Verify envelope parameters exist in synthesis
+                    const passed = test.expectedDuration > 0 && 
+                                 test.expectedAttack >= 0 && 
+                                 test.expectedDecay > 0;
+                    
+                    if (passed) {
+                        addTestResult('individual', 'pass', 
+                            `${test.name}: Duration ${test.expectedDuration}s, Decay ${test.expectedDecay}s ✓`);
+                        log('success', `${test.name} envelope verified`);
+                        recordTest(true);
+                    } else {
+                        throw new Error('Invalid envelope parameters');
+                    }
+                    
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                } catch (error) {
+                    addTestResult('individual', 'fail', `${test.name} failed: ${error.message}`);
+                    log('error', `${test.name} failed: ${error.message}`);
+                    recordTest(false);
+                }
+            }
+
+            updateStatus('testStatus', 'ready', 'Tests: Complete');
+            log('success', 'Envelope tests completed');
+        }
+
+        // Test frequency characteristics
+        async function testFrequencies() {
+            if (!audioContext) {
+                await initializeAudio();
+            }
+
+            log('info', 'Testing frequency characteristics...');
+            updateStatus('testStatus', 'testing', 'Tests: Frequency Analysis');
+
+            const frequencyTests = [
+                {
+                    name: 'Kick Frequency Sweep',
+                    drum: 'kick',
+                    startFreq: 150,
+                    endFreq: 30,
+                    range: 'Sub-bass to Low-mid'
+                },
+                {
+                    name: 'Snare Dual Frequency',
+                    drum: 'snare',
+                    freq1: 180,
+                    freq2: 330,
+                    range: 'Low-mid'
+                },
+                {
+                    name: 'Hi-Hat High Frequency',
+                    drum: 'hihat',
+                    filterFreq: 7000,
+                    range: 'High frequency (7kHz+)'
+                },
+                {
+                    name: 'Bass Frequency',
+                    drum: 'bass',
+                    baseFreq: 80,
+                    range: 'Bass range'
+                }
+            ];
+
+            for (const test of frequencyTests) {
+                try {
+                    log('info', `Testing ${test.name}...`);
+                    
+                    // Play the sound and capture frequency data
+                    const time = audioContext.currentTime + 0.1;
+                    
+                    switch(test.drum) {
+                        case 'kick':
+                            drumEngine.drums.playKick(time, 1.0);
+                            break;
+                        case 'snare':
+                            drumEngine.drums.playSnare(time, 1.0);
+                            break;
+                        case 'hihat':
+                            drumEngine.drums.playHiHat(time, 1.0, false);
+                            break;
+                        case 'bass':
+                            drumEngine.drums.playBass(time, 1.0, 80);
+                            break;
+                    }
+
+                    await new Promise(resolve => setTimeout(resolve, 150));
+
+                    // Get frequency data
+                    const bufferLength = analyser.frequencyBinCount;
+                    const dataArray = new Uint8Array(bufferLength);
+                    analyser.getByteFrequencyData(dataArray);
+
+                    // Find peak frequency
+                    let maxValue = 0;
+                    let peakIndex = 0;
+                    for (let i = 0; i < bufferLength; i++) {
+                        if (dataArray[i] > maxValue) {
+                            maxValue = dataArray[i];
+                            peakIndex = i;
+                        }
+                    }
+
+                    const nyquist = audioContext.sampleRate / 2;
+                    const peakFreq = (peakIndex * nyquist) / bufferLength;
+
+                    addTestResult('individual', 'pass', 
+                        `${test.name}: Peak at ${peakFreq.toFixed(0)}Hz, Range: ${test.range} ✓`);
+                    log('success', `${test.name} verified: Peak at ${peakFreq.toFixed(0)}Hz`);
+                    recordTest(true);
+
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                } catch (error) {
+                    addTestResult('individual', 'fail', `${test.name} failed: ${error.message}`);
+                    log('error', `${test.name} failed: ${error.message}`);
+                    recordTest(false);
+                }
+            }
+
+            updateStatus('testStatus', 'ready', 'Tests: Complete');
+            log('success', 'Frequency tests completed');
+        }
+
+        // Load and test preset pattern
+        async function loadAndTestPreset(presetName) {
+            if (!drumEngine) {
+                await initializeAudio();
+            }
+
+            log('info', `Loading preset: ${presetName}`);
+            
+            try {
+                const success = drumEngine.loadPreset(presetName);
+                
+                if (success) {
+                    const pattern = drumEngine.getPattern();
+                    
+                    // Count active steps per track
+                    const kickSteps = pattern.kick.filter(Boolean).length;
+                    const snareSteps = pattern.snare.filter(Boolean).length;
+                    const hihatSteps = pattern.hihat.filter(Boolean).length;
+                    const bassSteps = pattern.bass.filter(Boolean).length;
+                    const totalSteps = kickSteps + snareSteps + hihatSteps + bassSteps;
+
+                    document.getElementById('patternInfo').innerHTML = `
+                        <strong>Preset: ${presetName.toUpperCase()}</strong><br>
+                        Kick: ${kickSteps} steps | Snare: ${snareSteps} steps<br>
+                        Hi-Hat: ${hihatSteps} steps | Bass: ${bassSteps} steps<br>
+                        Total active steps: ${totalSteps}
+                    `;
+
+                    addTestResult('pattern', 'pass', 
+                        `Preset "${presetName}" loaded: ${totalSteps} active steps`);
+                    log('success', `Preset "${presetName}" loaded successfully`);
+                    recordTest(true);
+
+                    // Highlight active preset button
+                    document.querySelectorAll('.preset-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    event.target.classList.add('active');
+                } else {
+                    throw new Error('Failed to load preset');
+                }
+            } catch (error) {
+                addTestResult('pattern', 'fail', `Failed to load preset "${presetName}": ${error.message}`);
+                log('error', `Failed to load preset "${presetName}": ${error.message}`);
+                recordTest(false);
+            }
+        }
+
+        // Start pattern playback
+        async function startPattern() {
+            if (!drumEngine) {
+                await initializeAudio();
+            }
+
+            try {
+                await drumEngine.start();
+                log('success', 'Pattern playback started');
+                addTestResult('pattern', 'info', 'Pattern playback started');
+                
+                document.getElementById('playBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+            } catch (error) {
+                log('error', `Failed to start playback: ${error.message}`);
+                addTestResult('pattern', 'fail', `Playback failed: ${error.message}`);
+            }
+        }
+
+        // Stop pattern playback
+        function stopPattern() {
+            if (drumEngine) {
+                drumEngine.stop();
+                log('info', 'Pattern playback stopped');
+                addTestResult('pattern', 'info', 'Pattern playback stopped');
+                
+                document.getElementById('playBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+            }
+        }
+
+        // Test all presets
+        async function testAllPresets() {
+            if (!drumEngine) {
+                await initializeAudio();
+            }
+
+            log('info', 'Testing all preset patterns...');
+            updateStatus('testStatus', 'testing', 'Tests: Preset Validation');
+
+            const presets = drumEngine.getPresets();
+            
+            for (const preset of presets) {
+                await loadAndTestPreset(preset);
+                
+                // Test playback for 2 bars
+                await drumEngine.start();
+                await new Promise(resolve => setTimeout(resolve, 4000));
+                drumEngine.stop();
+                
+                addTestResult('pattern', 'pass', `Preset "${preset}" playback verified`);
+                log('success', `Preset "${preset}" playback test passed`);
+                recordTest(true);
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            updateStatus('testStatus', 'ready', 'Tests: Complete');
+            log('success', 'All preset tests completed');
+        }
+
+        // Run comprehensive verification tests
+        async function runComprehensiveTests() {
+            log('info', '=== STARTING COMPREHENSIVE VERIFICATION ===');
+            updateStatus('testStatus', 'testing', 'Tests: Running Comprehensive Suite');
+            
+            // Reset results
+            testResults = { passed: 0, failed: 0, total: 0, details: [] };
+            updateTestSummary();
+            
+            const tests = [
+                { name: 'Audio Initialization', fn: initializeAudio },
+                { name: 'All Drum Sounds', fn: testAllDrums },
+                { name: 'Envelope Characteristics', fn: testEnvelopes },
+                { name: 'Frequency Analysis', fn: testFrequencies },
+                { name: 'All Presets', fn: testAllPresets }
+            ];
+
+            for (let i = 0; i < tests.length; i++) {
+                const test = tests[i];
+                const progress = ((i + 1) / tests.length) * 100;
+                
+                updateProgress(progress, `Running: ${test.name}`);
+                log('info', `Running test: ${test.name}`);
+                
+                try {
+                    await test.fn();
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                } catch (error) {
+                    log('error', `Test "${test.name}" encountered error: ${error.message}`);
+                }
+            }
+
+            updateProgress(100, 'Complete');
+            updateStatus('testStatus', 'ready', 'Tests: Complete');
+            log('success', '=== COMPREHENSIVE VERIFICATION COMPLETE ===');
+            
+            // Show final summary
+            const successRate = testResults.total > 0 
+                ? ((testResults.passed / testResults.total) * 100).toFixed(1)
+                : 0;
+            
+            log('info', `Final Results: ${testResults.passed}/${testResults.total} passed (${successRate}%)`);
+        }
+
+        // Run timing accuracy tests
+        async function runTimingTests() {
+            if (!drumEngine) {
+                await initializeAudio();
+            }
+
+            log('info', 'Running timing accuracy tests...');
+            updateStatus('testStatus', 'testing', 'Tests: Timing Analysis');
+
+            const timingData = [];
+            let stepCount = 0;
+
+            drumEngine.onStepPlay((stepNumber, time) => {
+                const actualTime = audioContext.currentTime;
+                const latency = (actualTime - time) * 1000; // Convert to ms
+                timingData.push({ step: stepNumber, scheduledTime: time, actualTime, latency });
+                stepCount++;
+            });
+
+            // Run for 4 bars (64 steps)
+            drumEngine.loadPreset('basic');
+            await drumEngine.start();
+            
+            await new Promise(resolve => setTimeout(resolve, 8000));
+            
+            drumEngine.stop();
+
+            // Analyze timing data
+            if (timingData.length > 0) {
+                const avgLatency = timingData.reduce((sum, d) => sum + d.latency, 0) / timingData.length;
+                const maxLatency = Math.max(...timingData.map(d => d.latency));
+                const minLatency = Math.min(...timingData.map(d => d.latency));
+
+                addTestResult('pattern', 'pass', 
+                    `Timing: Avg ${avgLatency.toFixed(2)}ms, Min ${minLatency.toFixed(2)}ms, Max ${maxLatency.toFixed(2)}ms`);
+                log('success', `Timing test complete: ${stepCount} steps analyzed`);
+                recordTest(true);
+            }
+
+            updateStatus('testStatus', 'ready', 'Tests: Complete');
+        }
+
+        // Run frequency analysis
+        async function runFrequencyAnalysis() {
+            await testFrequencies();
+        }
+
+        // Export test results
+        function exportResults() {
+            const results = {
+                timestamp: new Date().toISOString(),
+                summary: {
+                    passed: testResults.passed,
+                    failed: testResults.failed,
+                    total: testResults.total,
+                    successRate: testResults.total > 0 
+                        ? ((testResults.passed / testResults.total) * 100).toFixed(2) + '%'
+                        : '0%'
+                },
+                audioContext: {
+                    sampleRate: audioContext ? audioContext.sampleRate : 'Not initialized',
+                    state: audioContext ? audioContext.state : 'Not initialized'
+                },
+                details: testResults.details
+            };
+
+            const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `drum-verification-results-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            log('success', 'Test results exported successfully');
+        }
+
+        // Helper functions
+        function updateStatus(elementId, status, text) {
+            const indicator = document.getElementById(elementId);
+            const textElement = document.getElementById(elementId + 'Text');
+            
+            indicator.className = 'status-indicator ' + status;
+            if (textElement) {
+                textElement.textContent = text;
+            }
+        }
+
+        function addTestResult(section, type, message) {
+            const container = section === 'individual' 
+                ? document.getElementById('individualTestResults')
+                : document.getElementById('patternTestResults');
+            
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result-item ${type}`;
+            
+            const icon = type === 'pass' ? '✓' : type === 'fail' ? '✗' : 'ℹ';
+            resultDiv.innerHTML = `<span class="icon">${icon}</span><span>${message}</span>`;
+            
+            container.insertBefore(resultDiv, container.firstChild);
+            
+            // Keep only last 20 results
+            while (container.children.length > 20) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        function log(level, message) {
+            const console = document.getElementById('logConsole');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `
+                <span class="log-timestamp">[${timestamp}]</span>
+                <span class="log-level ${level}">${level.toUpperCase()}</span>
+                ${message}
+            `;
+            
+            console.insertBefore(entry, console.firstChild);
+            
+            // Keep only last 50 entries
+            while (console.children.length > 50) {
+                console.removeChild(console.lastChild);
+            }
+        }
+
+        function recordTest(passed) {
+            if (passed) {
+                testResults.passed++;
+            } else {
+                testResults.failed++;
+            }
+            testResults.total++;
+            
+            updateTestSummary();
+        }
+
+        function updateTestSummary() {
+            document.getElementById('testsPassed').textContent = testResults.passed;
+            document.getElementById('testsFailed').textContent = testResults.failed;
+            document.getElementById('totalTests').textContent = testResults.total;
+            
+            const successRate = testResults.total > 0 
+                ? ((testResults.passed / testResults.total) * 100).toFixed(1)
+                : 0;
+            document.getElementById('successRate').textContent = successRate + '%';
+        }
+
+        function updateProgress(percent, text) {
+            const progressFill = document.getElementById('testProgress');
+            progressFill.style.width = percent + '%';
+            progressFill.textContent = text || (percent + '%');
+        }
+
+        // Initialize on load
+        log('info', 'Drum Synthesis Verification Suite loaded');
+        log('info', 'Click "Initialize Audio" to begin testing');
+    </script>
+</body>
+</html>

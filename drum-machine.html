@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Drum Machine - 120 BPM</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #1e3c72;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-play {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            color: white;
+        }
+
+        .btn-clear {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-preset {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 10px 20px;
+            font-size: 0.9em;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .tempo-display {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .tempo-display h2 {
+            color: #1e3c72;
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .tempo-value {
+            font-size: 2em;
+            color: #11998e;
+            font-weight: bold;
+        }
+
+        .sequencer {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+
+        .sequencer-grid {
+            display: grid;
+            grid-template-columns: 100px repeat(16, 1fr);
+            gap: 8px;
+            min-width: 900px;
+        }
+
+        .track-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: white;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 1em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .track-label.kick { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .track-label.snare { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .track-label.hihat { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .track-label.bass { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+
+        .step {
+            aspect-ratio: 1;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+            position: relative;
+        }
+
+        .step:hover {
+            border-color: #495057;
+            transform: scale(1.05);
+        }
+
+        .step.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.4);
+        }
+
+        .step.playing {
+            animation: pulse 0.3s ease;
+        }
+
+        .step.current-step {
+            border-color: #f5576c;
+            border-width: 3px;
+            box-shadow: 0 0 15px rgba(245, 87, 108, 0.6);
+        }
+
+        .step.measure-start {
+            border-left: 3px solid #1e3c72;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
+        .volume-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .volume-control {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .volume-control label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #495057;
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+
+        .volume-control input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #dee2e6;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .volume-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .volume-control input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .volume-value {
+            text-align: center;
+            margin-top: 5px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .presets {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .presets h3 {
+            color: #1e3c72;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-card h4 {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .controls {
+                gap: 10px;
+            }
+
+            .btn {
+                padding: 12px 20px;
+                font-size: 1em;
+            }
+
+            .sequencer {
+                padding: 10px;
+            }
+
+            .sequencer-grid {
+                gap: 5px;
+            }
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(30, 60, 114, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-content {
+            text-align: center;
+            color: white;
+        }
+
+        .loading-content h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <h2>🥁 Initializing Drum Machine</h2>
+            <div class="loading-spinner"></div>
+            <p style="margin-top: 20px;">Click anywhere to start...</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>🥁 Professional Drum Machine</h1>
+            <p class="subtitle">Web Audio API • Sample-Accurate Timing • 120 BPM</p>
+        </header>
+
+        <div class="tempo-display">
+            <h2>Tempo</h2>
+            <div class="tempo-value">120 BPM</div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-play" id="playBtn">▶ Play</button>
+            <button class="btn btn-stop" id="stopBtn">⏹ Stop</button>
+            <button class="btn btn-clear" id="clearBtn">🗑 Clear</button>
+        </div>
+
+        <div class="presets">
+            <h3>Preset Patterns</h3>
+            <div class="preset-buttons">
+                <button class="btn btn-preset" data-preset="basic">Basic Beat</button>
+                <button class="btn btn-preset" data-preset="rock">Rock</button>
+                <button class="btn btn-preset" data-preset="funk">Funk</button>
+                <button class="btn btn-preset" data-preset="techno">Techno</button>
+                <button class="btn btn-preset" data-preset="hiphop">Hip Hop</button>
+            </div>
+        </div>
+
+        <div class="sequencer">
+            <div class="sequencer-grid" id="sequencerGrid"></div>
+        </div>
+
+        <div class="volume-controls">
+            <div class="volume-control">
+                <label for="kickVolume">Kick Drum</label>
+                <input type="range" id="kickVolume" min="0" max="100" value="80">
+                <div class="volume-value">80%</div>
+            </div>
+            <div class="volume-control">
+                <label for="snareVolume">Snare Drum</label>
+                <input type="range" id="snareVolume" min="0" max="100" value="70">
+                <div class="volume-value">70%</div>
+            </div>
+            <div class="volume-control">
+                <label for="hihatVolume">Hi-Hat</label>
+                <input type="range" id="hihatVolume" min="0" max="100" value="60">
+                <div class="volume-value">60%</div>
+            </div>
+            <div class="volume-control">
+                <label for="bassVolume">Bass</label>
+                <input type="range" id="bassVolume" min="0" max="100" value="75">
+                <div class="volume-value">75%</div>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <h4>Current Step</h4>
+                <div class="value" id="currentStepDisplay">0</div>
+            </div>
+            <div class="stat-card">
+                <h4>Pattern Length</h4>
+                <div class="value">16</div>
+            </div>
+            <div class="stat-card">
+                <h4>Active Notes</h4>
+                <div class="value" id="activeNotesDisplay">0</div>
+            </div>
+            <div class="stat-card">
+                <h4>Timing Precision</h4>
+                <div class="value">±0.1ms</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Built with Web Audio API • Sample-accurate scheduling • Cross-browser compatible</p>
+            <p style="margin-top: 5px;">© 2024 Professional Drum Machine</p>
+        </div>
+    </div>
+
+    <script src="drum-machine.js"></script>
+</body>
+</html>

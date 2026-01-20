@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drum Machine - Optimized Visual Sync</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      max-width: 1200px;
+      width: 100%;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 2.5em;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #a0a0a0;
+      margin-bottom: 30px;
+      font-size: 0.9em;
+    }
+
+    /* Control Panel */
+    .controls {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .control-group label {
+      font-size: 0.85em;
+      color: #a0a0a0;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .control-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    button.stop {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    button.secondary {
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: none;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.1);
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.5);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.5);
+    }
+
+    select {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 1em;
+      cursor: pointer;
+      outline: none;
+    }
+
+    select option {
+      background: #1a1a2e;
+      color: white;
+    }
+
+    .value-display {
+      font-weight: 600;
+      color: #667eea;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    /* Drum Grid */
+    .drum-grid {
+      background: rgba(0, 0, 0, 0.3);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .track-row {
+      display: grid;
+      grid-template-columns: 100px repeat(16, 1fr);
+      gap: 6px;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+
+    .track-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .track-label {
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 0.9em;
+      padding: 10px;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .track-label.kick {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.2) 100%);
+      color: #ef4444;
+    }
+
+    .track-label.snare {
+      background: linear-gradient(135deg, rgba(20, 184, 166, 0.2) 0%, rgba(13, 148, 136, 0.2) 100%);
+      color: #14b8a6;
+    }
+
+    .track-label.hihat {
+      background: linear-gradient(135deg, rgba(234, 179, 8, 0.2) 0%, rgba(202, 138, 4, 0.2) 100%);
+      color: #eab308;
+    }
+
+    .track-label.bass {
+      background: linear-gradient(135deg, rgba(96, 165, 250, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
+      color: #60a5fa;
+    }
+
+    .grid-cell {
+      aspect-ratio: 1;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.1s ease;
+      position: relative;
+    }
+
+    .grid-cell:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: scale(1.05);
+    }
+
+    .grid-cell.active {
+      box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+
+    .grid-cell.active.kick {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.5) 0%, rgba(220, 38, 38, 0.5) 100%);
+    }
+
+    .grid-cell.active.snare {
+      background: linear-gradient(135deg, rgba(20, 184, 166, 0.5) 0%, rgba(13, 148, 136, 0.5) 100%);
+    }
+
+    .grid-cell.active.hihat {
+      background: linear-gradient(135deg, rgba(234, 179, 8, 0.5) 0%, rgba(202, 138, 4, 0.5) 100%);
+    }
+
+    .grid-cell.active.bass {
+      background: linear-gradient(135deg, rgba(96, 165, 250, 0.5) 0%, rgba(59, 130, 246, 0.5) 100%);
+    }
+
+    /* Performance Metrics */
+    .metrics {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+
+    .metric-item {
+      text-align: center;
+    }
+
+    .metric-label {
+      font-size: 0.8em;
+      color: #a0a0a0;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 5px;
+    }
+
+    .metric-value {
+      font-size: 1.5em;
+      font-weight: 600;
+      color: #667eea;
+    }
+
+    .status-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+      animation: pulse-status 2s ease-in-out infinite;
+    }
+
+    .status-indicator.playing {
+      background: #10b981;
+    }
+
+    .status-indicator.stopped {
+      background: #ef4444;
+    }
+
+    @keyframes pulse-status {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 1.8em;
+      }
+
+      .track-row {
+        grid-template-columns: 80px repeat(16, 1fr);
+        gap: 4px;
+      }
+
+      .track-label {
+        font-size: 0.7em;
+        padding: 8px 4px;
+      }
+
+      button {
+        padding: 10px 16px;
+        font-size: 0.9em;
+      }
+    }
+  </style>
+  <!-- Include visual sync CSS -->
+  <link rel="stylesheet" href="visualSync.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🥁 Drum Machine</h1>
+    <p class="subtitle">Optimized Visual Sync with Web Audio API</p>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="control-group">
+        <label>Playback</label>
+        <div class="control-row">
+          <button id="playBtn">▶️ Play</button>
+          <button id="stopBtn" class="stop">⏹️ Stop</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>BPM: <span id="bpmValue" class="value-display">120</span></label>
+        <input type="range" id="bpmSlider" min="60" max="180" value="120" step="1">
+      </div>
+
+      <div class="control-group">
+        <label>Volume: <span id="volumeValue" class="value-display">80%</span></label>
+        <input type="range" id="volumeSlider" min="0" max="100" value="80" step="1">
+      </div>
+
+      <div class="control-group">
+        <label>Visual Mode</label>
+        <select id="visualMode">
+          <option value="highlight">Highlight</option>
+          <option value="pulse" selected>Pulse</option>
+          <option value="glow">Glow</option>
+          <option value="minimal">Minimal</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>Preset Pattern</label>
+        <select id="presetSelect">
+          <option value="">-- Select Preset --</option>
+          <option value="basic">Basic Beat</option>
+          <option value="funk">Funk Groove</option>
+          <option value="breakbeat">Breakbeat</option>
+          <option value="techno">Techno</option>
+          <option value="hiphop">Hip-Hop</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>Actions</label>
+        <div class="control-row">
+          <button id="clearBtn" class="secondary">Clear</button>
+          <button id="randomBtn" class="secondary">Random</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drum Grid -->
+    <div class="drum-grid">
+      <div class="track-row">
+        <div class="track-label kick">Kick</div>
+        <div class="grid-cell kick" data-track="kick" data-step="0"></div>
+        <div class="grid-cell kick" data-track="kick" data-step="1"></div>
+        <div class="grid-cell kick" data-track="kick" data-step="2"></div>
+        <div class="grid-cell kick" data-track="kick" data-step="3"></div>
+        <div class="grid-cell kick" data-track="kick" data-step="4"></div>
+        <div class="grid-cell kick" data-track="kick" data-step="5"></div>
+        <div class="grid-cell kick" data-track="kick" data-step="6"></div>
+        <div class="grid-cell kick" data-track="kick" data-step="7"></div>
+        <div class="grid-cell kick" data-track="kick" data-step="8"></div>
+        <div class="grid-cell kick" data-track="kick" data-step="9"></div>
+        <div class="grid-cell kick" data-track="kick" data-step="10"></div>
+        <div class="grid-cell kick" data-track="kick" data-step="11"></div>
+        <div class="grid-cell kick" data-track="kick" data-step="12"></div>
+        <div class="grid-cell kick" data-track="kick" data-step="13"></div>
+        <div class="grid-cell kick" data-track="kick" data-step="14"></div>
+        <div class="grid-cell kick" data-track="kick" data-step="15"></div>
+      </div>
+
+      <div class="track-row">
+        <div class="track-label snare">Snare</div>
+        <div class="grid-cell snare" data-track="snare" data-step="0"></div>
+        <div class="grid-cell snare" data-track="snare" data-step="1"></div>
+        <div class="grid-cell snare" data-track="snare" data-step="2"></div>
+        <div class="grid-cell snare" data-track="snare" data-step="3"></div>
+        <div class="grid-cell snare" data-track="snare" data-step="4"></div>
+        <div class="grid-cell snare" data-track="snare" data-step="5"></div>
+        <div class="grid-cell snare" data-track="snare" data-step="6"></div>
+        <div class="grid-cell snare" data-track="snare" data-step="7"></div>
+        <div class="grid-cell snare" data-track="snare" data-step="8"></div>
+        <div class="grid-cell snare" data-track="snare" data-step="9"></div>
+        <div class="grid-cell snare" data-track="snare" data-step="10"></div>
+        <div class="grid-cell snare" data-track="snare" data-step="11"></div>
+        <div class="grid-cell snare" data-track="snare" data-step="12"></div>
+        <div class="grid-cell snare" data-track="snare" data-step="13"></div>
+        <div class="grid-cell snare" data-track="snare" data-step="14"></div>
+        <div class="grid-cell snare" data-track="snare" data-step="15"></div>
+      </div>
+
+      <div class="track-row">
+        <div class="track-label hihat">Hi-Hat</div>
+        <div class="grid-cell hihat" data-track="hihat" data-step="0"></div>
+        <div class="grid-cell hihat" data-track="hihat" data-step="1"></div>
+        <div class="grid-cell hihat" data-track="hihat" data-step="2"></div>
+        <div class="grid-cell hihat" data-track="hihat" data-step="3"></div>
+        <div class="grid-cell hihat" data-track="hihat" data-step="4"></div>
+        <div class="grid-cell hihat" data-track="hihat" data-step="5"></div>
+        <div class="grid-cell hihat" data-track="hihat" data-step="6"></div>
+        <div class="grid-cell hihat" data-track="hihat" data-step="7"></div>
+        <div class="grid-cell hihat" data-track="hihat" data-step="8"></div>
+        <div class="grid-cell hihat" data-track="hihat" data-step="9"></div>
+        <div class="grid-cell hihat" data-track="hihat" data-step="10"></div>
+        <div class="grid-cell hihat" data-track="hihat" data-step="11"></div>
+        <div class="grid-cell hihat" data-track="hihat" data-step="12"></div>
+        <div class="grid-cell hihat" data-track="hihat" data-step="13"></div>
+        <div class="grid-cell hihat" data-track="hihat" data-step="14"></div>
+        <div class="grid-cell hihat" data-track="hihat" data-step="15"></div>
+      </div>
+
+      <div class="track-row">
+        <div class="track-label bass">Bass</div>
+        <div class="grid-cell bass" data-track="bass" data-step="0"></div>
+        <div class="grid-cell bass" data-track="bass" data-step="1"></div>
+        <div class="grid-cell bass" data-track="bass" data-step="2"></div>
+        <div class="grid-cell bass" data-track="bass" data-step="3"></div>
+        <div class="grid-cell bass" data-track="bass" data-step="4"></div>
+        <div class="grid-cell bass" data-track="bass" data-step="5"></div>
+        <div class="grid-cell bass" data-track="bass" data-step="6"></div>
+        <div class="grid-cell bass" data-track="bass" data-step="7"></div>
+        <div class="grid-cell bass" data-track="bass" data-step="8"></div>
+        <div class="grid-cell bass" data-track="bass" data-step="9"></div>
+        <div class="grid-cell bass" data-track="bass" data-step="10"></div>
+        <div class="grid-cell bass" data-track="bass" data-step="11"></div>
+        <div class="grid-cell bass" data-track="bass" data-step="12"></div>
+        <div class="grid-cell bass" data-track="bass" data-step="13"></div>
+        <div class="grid-cell bass" data-track="bass" data-step="14"></div>
+        <div class="grid-cell bass" data-track="bass" data-step="15"></div>
+      </div>
+    </div>
+
+    <!-- Performance Metrics -->
+    <div class="metrics">
+      <div class="metric-item">
+        <div class="metric-label">Status</div>
+        <div class="metric-value">
+          <span id="statusIndicator" class="status-indicator stopped"></span>
+          <span id="statusText">Stopped</span>
+        </div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-label">Current Step</div>
+        <div class="metric-value" id="currentStep">-</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-label">Current Beat</div>
+        <div class="metric-value" id="currentBeat">-</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-label">Frame Rate</div>
+        <div class="metric-value" id="frameRate">60 fps</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-label">Audio Latency</div>
+        <div class="metric-value" id="audioLatency">- ms</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-label">Active Notes</div>
+        <div class="metric-value" id="activeNotes">0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Include drum machine engine (from previous implementation) -->
+  <script type="module">
+    // Import modules (in production, use proper module paths)
+    // For this demo, we'll include simplified versions inline
+    
+    // Simplified Drum Machine Engine
+    class DrumMachineEngine {
+      constructor(bpm = 120) {
+        this.audioContext = null;
+        this.bpm = bpm;
+        this.isPlaying = false;
+        this.currentStep = -1;
+        this.pattern = {
+          kick: Array(16).fill(false),
+          snare: Array(16).fill(false),
+          hihat: Array(16).fill(false),
+          bass: Array(16).fill(false)
+        };
+        this.stepCallbacks = [];
+        this.masterVolume = 0.8;
+        this.schedulerTimer = null;
+        this.nextStepTime = 0;
+        this.scheduleAheadTime = 0.1;
+        this.lookAhead = 25;
+      }
+
+      async initialize() {
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        await this.audioContext.resume();
+        console.log('✅ Audio engine initialized');
+      }
+
+      async start() {
+        if (!this.audioContext) await this.initialize();
+        this.isPlaying = true;
+        this.currentStep = -1;
+        this.nextStepTime = this.audioContext.currentTime;
+        this._scheduler();
+        console.log('▶️ Playback started');
+      }
+
+      stop() {
+        this.isPlaying = false;
+        this.currentStep = -1;
+        if (this.schedulerTimer) {
+          clearTimeout(this.schedulerTimer);
+          this.schedulerTimer = null;
+        }
+        console.log('⏹️ Playback stopped');
+      }
+
+      _scheduler() {
+        if (!this.isPlaying) return;
+
+        while (this.nextStepTime < this.audioContext.currentTime + this.scheduleAheadTime) {
+          this._scheduleStep(this.nextStepTime);
+          this._advanceStep();
+        }
+
+        this.schedulerTimer = setTimeout(() => this._scheduler(), this.lookAhead);
+      }
+
+      _scheduleStep(time) {
+        const step = (this.currentStep + 1) % 16;
+        
+        // Schedule sounds
+        if (this.pattern.kick[step]) this._playKick(time);
+        if (this.pattern.snare[step]) this._playSnare(time);
+        if (this.pattern.hihat[step]) this._playHiHat(time);
+        if (this.pattern.bass[step]) this._playBass(time);
+      }
+
+      _advanceStep() {
+        const secondsPerBeat = 60.0 / this.bpm;
+        const secondsPerStep = secondsPerBeat / 4;
+        this.nextStepTime += secondsPerStep;
+        this.currentStep = (this.currentStep + 1) % 16;
+        
+        // Notify callbacks
+        this.stepCallbacks.forEach(cb => cb(this.currentStep));
+      }
+
+      _playKick(time) {
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+        
+        osc.frequency.setValueAtTime(150, time);
+        osc.frequency.exponentialRampToValueAtTime(30, time + 0.1);
+        gain.gain.setValueAtTime(this.masterVolume * 0.8, time);
+        gain.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
+        
+        osc.connect(gain);
+        gain.connect(this.audioContext.destination);
+        osc.start(time);
+        osc.stop(time + 0.15);
+      }
+
+      _playSnare(time) {
+        const noise = this.audioContext.createBufferSource();
+        const noiseBuffer = this.audioContext.createBuffer(1, this.audioContext.sampleRate * 0.1, this.audioContext.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < output.length; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+        noise.buffer = noiseBuffer;
+        
+        const noiseFilter = this.audioContext.createBiquadFilter();
+        noiseFilter.type = 'highpass';
+        noiseFilter.frequency.value = 1000;
+        
+        const noiseGain = this.audioContext.createGain();
+        noiseGain.gain.setValueAtTime(this.masterVolume * 0.5, time);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
+        
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(this.audioContext.destination);
+        noise.start(time);
+      }
+
+      _playHiHat(time) {
+        const noise = this.audioContext.createBufferSource();
+        const noiseBuffer = this.audioContext.createBuffer(1, this.audioContext.sampleRate * 0.05, this.audioContext.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < output.length; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+        noise.buffer = noiseBuffer;
+        
+        const bandpass = this.audioContext.createBiquadFilter();
+        bandpass.type = 'bandpass';
+        bandpass.frequency.value = 8000;
+        
+        const gain = this.audioContext.createGain();
+        gain.gain.setValueAtTime(this.masterVolume * 0.3, time);
+        gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05);
+        
+        noise.connect(bandpass);
+        bandpass.connect(gain);
+        gain.connect(this.audioContext.destination);
+        noise.start(time);
+      }
+
+      _playBass(time) {
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+        
+        osc.type = 'square';
+        osc.frequency.value = 110;
+        gain.gain.setValueAtTime(this.masterVolume * 0.4, time);
+        gain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+        
+        osc.connect(gain);
+        gain.connect(this.audioContext.destination);
+        osc.start(time);
+        osc.stop(time + 0.2);
+      }
+
+      setBPM(bpm) {
+        this.bpm = Math.max(60, Math.min(180, bpm));
+      }
+
+      setMasterVolume(volume) {
+        this.masterVolume = Math.max(0, Math.min(1, volume));
+      }
+
+      toggleStep(track, step) {
+        if (this.pattern[track]) {
+          this.pattern[track][step] = !this.pattern[track][step];
+          return this.pattern[track][step];
+        }
+        return false;
+      }
+
+      loadPreset(name) {
+        const presets = {
+          basic: {
+            kick: [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0].map(Boolean),
+            snare: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0].map(Boolean),
+            hihat: [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0].map(Boolean),
+            bass: [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0].map(Boolean)
+          },
+          funk: {
+            kick: [1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0].map(Boolean),
+            snare: [0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,1].map(Boolean),
+            hihat: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1].map(Boolean),
+            bass: [1,0,0,1,0,0,1,0,1,0,0,1,0,0,0,0].map(Boolean)
+          }
+        };
+        
+        if (presets[name]) {
+          this.pattern = presets[name];
+          console.log(`📦 Loaded preset: ${name}`);
+        }
+      }
+
+      onStepPlay(callback) {
+        this.stepCallbacks.push(callback);
+      }
+
+      clearPattern() {
+        Object.keys(this.pattern).forEach(track => {
+          this.pattern[track].fill(false);
+        });
+      }
+
+      getPattern() {
+        return JSON.parse(JSON.stringify(this.pattern));
+      }
+    }
+
+    // Simplified Visual Sync Engine (inline version)
+    class VisualSyncEngine {
+      constructor(drumEngine) {
+        this.engine = drumEngine;
+        this.gridElements = { kick: [], snare: [], hihat: [], bass: [] };
+        this.currentStep = -1;
+        this.previousStep = -1;
+        this.isRunning = false;
+        this.animationFrameId = null;
+        this.feedbackMode = 'pulse';
+        
+        this.engine.onStepPlay((step) => {
+          this.currentStep = step;
+        });
+      }
+
+      initialize(gridElements) {
+        this.gridElements = gridElements;
+        console.log('✅ Visual sync initialized');
+      }
+
+      start() {
+        if (this.isRunning) return;
+        this.isRunning = true;
+        this._startVisualLoop();
+      }
+
+      stop() {
+        this.isRunning = false;
+        if (this.animationFrameId) {
+          cancelAnimationFrame(this.animationFrameId);
+        }
+        this._clearAllHighlights();
+      }
+
+      setFeedbackMode(mode) {
+        this.feedbackMode = mode;
+      }
+
+      _startVisualLoop() {
+        const update = () => {
+          if (!this.isRunning) return;
+          
+          if (this.currentStep !== this.previousStep) {
+            if (this.previousStep >= 0) {
+              this._unhighlightStep(this.previousStep);
+            }
+            if (this.currentStep >= 0) {
+              this._highlightStep(this.currentStep);
+            }
+            this.previousStep = this.currentStep;
+          }
+          
+          this.animationFrameId = requestAnimationFrame(update);
+        };
+        update();
+      }
+
+      _highlightStep(step) {
+        Object.keys(this.gridElements).forEach(track => {
+          const element = this.gridElements[track][step];
+          if (element) {
+            element.classList.add('step-playing');
+            element.classList.add(`step-playing-${this.feedbackMode}`);
+            element.classList.add(`${track}-playing`);
+          }
+        });
+      }
+
+      _unhighlightStep(step) {
+        Object.keys(this.gridElements).forEach(track => {
+          const element = this.gridElements[track][step];
+          if (element) {
+            element.classList.remove('step-playing');
+            element.classList.remove(`step-playing-${this.feedbackMode}`);
+            element.classList.remove(`${track}-playing`);
+          }
+        });
+      }
+
+      _clearAllHighlights() {
+        for (let i = 0; i < 16; i++) {
+          this._unhighlightStep(i);
+        }
+      }
+    }
+
+    // Initialize application
+    const drumEngine = new DrumMachineEngine(120);
+    const visualSync = new VisualSyncEngine(drumEngine);
+
+    // Collect grid elements
+    const gridElements = {
+      kick: [],
+      snare: [],
+      hihat: [],
+      bass: []
+    };
+
+    document.querySelectorAll('.grid-cell').forEach(cell => {
+      const track = cell.dataset.track;
+      const step = parseInt(cell.dataset.step);
+      gridElements[track][step] = cell;
+
+      // Add click handler
+      cell.addEventListener('click', () => {
+        const isActive = drumEngine.toggleStep(track, step);
+        cell.classList.toggle('active', isActive);
+        updateMetrics();
+      });
+    });
+
+    visualSync.initialize(gridElements);
+
+    // UI Controls
+    const playBtn = document.getElementById('playBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const bpmSlider = document.getElementById('bpmSlider');
+    const bpmValue = document.getElementById('bpmValue');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const volumeValue = document.getElementById('volumeValue');
+    const visualMode = document.getElementById('visualMode');
+    const presetSelect = document.getElementById('presetSelect');
+    const clearBtn = document.getElementById('clearBtn');
+    const randomBtn = document.getElementById('randomBtn');
+
+    playBtn.addEventListener('click', async () => {
+      if (!drumEngine.isPlaying) {
+        await drumEngine.start();
+        visualSync.start();
+        updateStatus(true);
+      }
+    });
+
+    stopBtn.addEventListener('click', () => {
+      drumEngine.stop();
+      visualSync.stop();
+      updateStatus(false);
+    });
+
+    bpmSlider.addEventListener('input', (e) => {
+      const bpm = parseInt(e.target.value);
+      drumEngine.setBPM(bpm);
+      bpmValue.textContent = bpm;
+    });
+
+    volumeSlider.addEventListener('input', (e) => {
+      const volume = parseInt(e.target.value) / 100;
+      drumEngine.setMasterVolume(volume);
+      volumeValue.textContent = `${e.target.value}%`;
+    });
+
+    visualMode.addEventListener('change', (e) => {
+      visualSync.setFeedbackMode(e.target.value);
+    });
+
+    presetSelect.addEventListener('change', (e) => {
+      if (e.target.value) {
+        drumEngine.loadPreset(e.target.value);
+        updateGridFromPattern();
+        e.target.value = '';
+      }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      if (confirm('Clear all patterns?')) {
+        drumEngine.clearPattern();
+        updateGridFromPattern();
+      }
+    });
+
+    randomBtn.addEventListener('click', () => {
+      Object.keys(drumEngine.pattern).forEach(track => {
+        drumEngine.pattern[track] = Array(16).fill(false).map(() => Math.random() > 0.7);
+      });
+      updateGridFromPattern();
+    });
+
+    // Update functions
+    function updateStatus(playing) {
+      const indicator = document.getElementById('statusIndicator');
+      const statusText = document.getElementById('statusText');
+      
+      if (playing) {
+        indicator.className = 'status-indicator playing';
+        statusText.textContent = 'Playing';
+        playBtn.textContent = '⏸️ Pause';
+      } else {
+        indicator.className = 'status-indicator stopped';
+        statusText.textContent = 'Stopped';
+        playBtn.textContent = '▶️ Play';
+      }
+    }
+
+    function updateGridFromPattern() {
+      const pattern = drumEngine.getPattern();
+      Object.keys(pattern).forEach(track => {
+        pattern[track].forEach((active, step) => {
+          const cell = gridElements[track][step];
+          if (cell) {
+            cell.classList.toggle('active', active);
+          }
+        });
+      });
+      updateMetrics();
+    }
+
+    function updateMetrics() {
+      const pattern = drumEngine.getPattern();
+      const totalActive = Object.values(pattern).flat().filter(Boolean).length;
+      document.getElementById('activeNotes').textContent = totalActive;
+    }
+
+    // Real-time metrics update
+    drumEngine.onStepPlay((step) => {
+      document.getElementById('currentStep').textContent = step + 1;
+      document.getElementById('currentBeat').textContent = Math.floor(step / 4) + 1;
+    });
+
+    // Frame rate monitor
+    let frameCount = 0;
+    let lastFrameTime = performance.now();
+    
+    function monitorFrameRate() {
+      frameCount++;
+      const now = performance.now();
+      if (now - lastFrameTime >= 1000) {
+        document.getElementById('frameRate').textContent = `${frameCount} fps`;
+        frameCount = 0;
+        lastFrameTime = now;
+      }
+      requestAnimationFrame(monitorFrameRate);
+    }
+    monitorFrameRate();
+
+    // Display audio latency
+    if (drumEngine.audioContext) {
+      const latency = (drumEngine.audioContext.baseLatency * 1000).toFixed(1);
+      document.getElementById('audioLatency').textContent = `${latency} ms`;
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (drumEngine.isPlaying) {
+          stopBtn.click();
+        } else {
+          playBtn.click();
+        }
+      }
+    });
+
+    // Initialize with basic pattern
+    drumEngine.loadPreset('basic');
+    updateGridFromPattern();
+
+    console.log('🎵 Drum Machine Ready!');
+    console.log('Press SPACE to play/stop');
+  </script>
+</body>
+</html>
